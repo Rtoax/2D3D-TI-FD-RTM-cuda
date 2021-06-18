@@ -1,4 +1,6 @@
-## TI media Finite Different Modeling and Reverse Time Migration
+# TI media Finite Different Modeling and Reverse Time Migration
+
+## Aspect
 
 * (2-dimension and 3-dimension) 
 * anisotropy media (VTI, TTI)
@@ -6,6 +8,10 @@
 * Finite Different Modeling
 * Angle Domain Common Imaging Gathers (ADCIGs)
 * Poynting vector methods
+
+## Author
+
+Rong Tao (RToax)
 
 ## wave equation
 

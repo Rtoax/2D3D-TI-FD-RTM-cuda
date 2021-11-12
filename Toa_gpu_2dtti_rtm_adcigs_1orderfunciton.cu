@@ -2,7 +2,7 @@
 //a##         2D Acoustic TTI Medium RTM   
 //a##  Ps : P + sv wave and get rid of sv        
 //a##       GPU(CUDA)  
-//a##
+//a##	Copyright (C) Rong Tao, all rights reserved
 //a##/*a***************************
 //a##Function for VTI medium modeling,2017.2.13
 //a##
@@ -15,14 +15,14 @@
 //a##                     vpx^2=vp^2*(1+2*epsilu);
 //a##                     vpn^2=vp^2*(1+2*deta);
 //a##*********a*******************/
-//a##
+//a##	
 //a##                                  code by Rong Tao 
 //a##                                   2017.2.21
 //a#########################################################
-#include<stdio.h>
-#include<malloc.h>
-#include<math.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <malloc.h>
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <cuda_runtime.h>
 
@@ -356,7 +356,8 @@ __global__ void mute_directwave(int nx,int nt,float dt,float favg,
            if((it>(int)(mu_t0/dt)-tt)&&(it<mu_nt))
               shot[id]=0.0;
    }
-}/*************func*******************/
+}
+/*************func*******************/
 __global__ void wavefield_bndr(int nnx, int nnz, int nx, int nz, int npml, int it, int nt, 
                                float *P, float *Q, float *P_bndr, float *Q_bndr, bool flag)
 {		

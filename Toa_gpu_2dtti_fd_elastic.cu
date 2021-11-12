@@ -2,15 +2,15 @@
 //a##         2D Elastic TTI Medium Forward   
 //a##  Ps : P0 + sv wave and get rid of sv        
 //a##       GPU(CUDA)  
-//a##
+//a##  miss Geo, now i'm in OS Cestc.
 //a##
 //a##                                  code by Rong Tao 
 //a##                                   2017.4.8
 //a#########################################################
-#include<stdio.h>
-#include<malloc.h>
-#include<math.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <malloc.h>
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <cuda_runtime.h>
 
@@ -262,7 +262,8 @@ __global__ void mute_directwave(int nx,int nt,float dt,float favg,
            if(it<mu_nt)
               shot[id]=0.0;
    }
-}/************************************func***************************************/      
+}
+/************************************func***************************************/      
 __global__ void absorb_bndr(float *P0,float *P1,float *Q0,float *Q1,int nx,int nz,int nnz,int npd,float qp) 
 {
     int id=threadIdx.x+blockDim.x*blockIdx.x;

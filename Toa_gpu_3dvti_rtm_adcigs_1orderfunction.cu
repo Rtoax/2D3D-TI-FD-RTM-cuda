@@ -17,14 +17,14 @@
 //a##                     vpn^2=vp^2*(1+2*deta);
 //a##  
 //a##*********a*******************/
-//a##
+//a##	Copyright (C) Rong Tao, all rights reserved
 //a##                                   code by Rong Tao 
 //a##                            
 //a#########################################################
-#include<stdio.h>
-#include<malloc.h>
-#include<math.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <malloc.h>
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <cuda_runtime.h>
 
@@ -336,7 +336,8 @@ __global__ void shot_record(int nnx,int nny, int nnz, int nx,int ny, int nz, int
                 }
             }       
 }
-/*************func**************/ 
+
+/*************func**************/ 
 void window3d(float *a, float *b, int nz, int nx, int ny, int nnz, int nnx, int npml)
 /*< window a 3d subvolume >*/
 {

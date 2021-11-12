@@ -19,10 +19,10 @@
 //a##                                  code by Rong Tao 
 //a##                                   2017.2.21
 //a#########################################################
-#include<stdio.h>
-#include<malloc.h>
-#include<math.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <malloc.h>
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <cuda_runtime.h>
 
@@ -308,7 +308,8 @@ __global__ void mute_directwave(int nx,int nt,float dt,float favg,
            if((it>(int)(mu_t0/dt)-tt)&&(it<mu_nt))
               shot[id]=0.0;
    }
-}
+}
+
 //a########################################################################
 int main(int argc,char *argv[])
 {

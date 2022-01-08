@@ -11,7 +11,7 @@
 
 ## Author
 
-Rong Tao (RToax)
+Rong Tao [RToax](https://github.com/Rtoax)
 
 ## wave equation
 

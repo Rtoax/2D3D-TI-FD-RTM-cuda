@@ -6,9 +6,9 @@
 - 👀 I’m interested in [Linux](https://github.com/torvalds/linux)
 - 🌱 I’m currently learning [Linux](https://github.com/torvalds/linux)
 - 💞️ I’m looking to collaborate on [libcareplus](https://github.com/Rtoax/libcareplus), [test-linux](https://github.com/Rtoax/test-linux) and [more](https://github.com/Rtoax).
-- 📫 How to reach me [GitHub](https://github.com/Rtoax), [CSDN](https://rtoax.blog.csdn.net/), [Gitee](https://gitee.com/rtoax) and 哆啦Linux梦.
+- 📫 How to reach me [GitHub](https://github.com/Rtoax), [CSDN](https://rtoax.blog.csdn.net/), [Gitee](https://gitee.com/rtoax) and Linux Newbie.
 
-![哆啦Linux梦](fwi.png)
+![Linux Newbie](fwi.png)
 
 ## Aspect
 

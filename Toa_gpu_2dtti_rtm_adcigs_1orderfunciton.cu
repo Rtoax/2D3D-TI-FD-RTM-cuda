@@ -51,42 +51,42 @@ void laplace_filter(int adj, int nz, int nx, float *in, float *out)
     int iz,ix,j;
     for (j=0;j<nx*nz;j++) out[j]=0.0;
     for (ix=0; ix < nx; ix++) {
-	for (iz=0; iz < nz; iz++) {
-	    j = iz+ix*nz;
-	    if (iz > 0) {
-		if (adj) {
-		    out[j-1] -= in[j];
-		    out[j]   += in[j];
-		} else {
-		    out[j] += in[j] - in[j-1];
-		}
-	    }
-	    if (iz < nz-1) {
-		if (adj) {
-		    out[j+1] -= in[j];
-		    out[j]   += in[j];
-		} else {
-		    out[j] += in[j] - in[j+1];
-		}
-	    }
+        for (iz=0; iz < nz; iz++) {
+            j = iz+ix*nz;
+            if (iz > 0) {
+            if (adj) {
+                out[j-1] -= in[j];
+                out[j]   += in[j];
+            } else {
+                out[j] += in[j] - in[j-1];
+            }
+            }
+            if (iz < nz-1) {
+            if (adj) {
+                out[j+1] -= in[j];
+                out[j]   += in[j];
+            } else {
+                out[j] += in[j] - in[j+1];
+            }
+            }
 
-	    if (ix > 0) {
-		if (adj) {
-		    out[j-nz] -= in[j];
-		    out[j]    += in[j];
-		} else {
-		    out[j] += in[j] - in[j-nz];
-		}
-	    }
-	    if (ix < nx-1) {
-		if (adj) {
-		    out[j+nz] -= in[j];
-		    out[j]    += in[j];
-		} else {
-		    out[j] += in[j] - in[j+nz];
-		}
-	    }
-	}
+            if (ix > 0) {
+            if (adj) {
+                out[j-nz] -= in[j];
+                out[j]    += in[j];
+            } else {
+                out[j] += in[j] - in[j-nz];
+            }
+            }
+            if (ix < nx-1) {
+            if (adj) {
+                out[j+nz] -= in[j];
+                out[j]    += in[j];
+            } else {
+                out[j] += in[j] - in[j+nz];
+            }
+            }
+        }
     }
 }
 //a################################################################################
@@ -94,69 +94,71 @@ __global__ void add_source(float pfac,float xsn,float zsn,int nx,int nz,int nnx,
                         float favg,int wtype,int npml,int is,int ds,float *P,float *Q)
 /*< generate ricker wavelet with time deley >*/
 {
-       int ixs,izs;
-       float x_,xx_,tdelay,ts,source=0.0,fs;
+    int ixs,izs;
+    float x_,xx_,tdelay,ts,source=0.0,fs;
 
-       tdelay=1.0/favg;
-       ts=t-tdelay;
-       fs=xsn+(is-1)*ds;
+    tdelay=1.0/favg;
+    ts=t-tdelay;
+    fs=xsn+(is-1)*ds;
 
-	if(wtype==1)//ricker wavelet
-	{
-          x_=favg*ts;
-          xx_=x_*x_;
-          source=(1-2*pi*pi*(xx_))*exp(-(pi*pi*xx_));
-	}else if(wtype==2){//derivative of gaussian
-          x_=(-4)*favg*favg*pi*pi/log(0.1);
-          source=(-2)*pi*pi*ts*exp(-x_*ts*ts);
-        }else if(wtype==3){//derivative of gaussian
-          x_=(-1)*favg*favg*pi*pi/log(0.1);
-          source=exp(-x_*ts*ts);
-        }
+    if(wtype==1)//ricker wavelet
+    {
+        x_=favg*ts;
+        xx_=x_*x_;
+        source=(1-2*pi*pi*(xx_))*exp(-(pi*pi*xx_));
+    }else if(wtype==2){//derivative of gaussian
+        x_=(-4)*favg*favg*pi*pi/log(0.1);
+        source=(-2)*pi*pi*ts*exp(-x_*ts*ts);
+    }else if(wtype==3){//derivative of gaussian
+        x_=(-1)*favg*favg*pi*pi/log(0.1);
+        source=exp(-x_*ts*ts);
+    }
 
-       if(t<=2*tdelay)
-       {
-	     ixs = (int)(fs+0.5)+npml-1;
-            izs = (int)(zsn+0.5)+npml-1;
-            P[ixs*nnz+izs]+=pfac*source;
-            Q[ixs*nnz+izs]+=pfac*source;
-       }
+    if(t<=2*tdelay)
+    {
+        ixs = (int)(fs+0.5)+npml-1;
+        izs = (int)(zsn+0.5)+npml-1;
+        P[ixs*nnz+izs]+=pfac*source;
+        Q[ixs*nnz+izs]+=pfac*source;
+    }
 }
+
 /*******************func*********************/
 __global__ void update_vel(int nx,int nz,int nnx,int nnz,int npml,float dt,float dx,float dz,
                            float *u0,float *w0,float *u1,float *w1,float *P,float *Q,
                            float *coffx1,float *coffx2,float *coffz1,float *coffz2,float *theta)
 {
-	int id=threadIdx.x+blockDim.x*blockIdx.x;
+    int id=threadIdx.x+blockDim.x*blockIdx.x;
 
-	int ix,iz,im;
-	float dtx,dtz,Px,Pz,Qz,Qx;
+    int ix,iz,im;
+    float dtx,dtz,Px,Pz,Qz,Qx;
 
-        ix=id/nnz;
-        iz=id%nnz;
+    ix=id/nnz;
+    iz=id%nnz;
 
-		 dtx=dt/dx;
-		 dtz=dt/dz;
-               if(id>=mm&&id<nnx*nnz-mm)
-                 {
-                   if(ix>=mm&&ix<(nnx-mm)&&iz>=mm&&iz<(nnz-mm))
-                    {
-                     Px=0.0;
-                     Pz=0.0;
-                     Qz=0.0;
-                     Qx=0.0;
-	             for(im=0;im<mm;im++)
-                      {
-                        Px+=c[im]*(P[id+(im+1)*nnz]-P[id-im*nnz]);
-                        Pz+=c[im]*(P[id+im+1]      -P[id-im]);
-                        Qz+=c[im]*(Q[id+im+1]      -Q[id-im]);
-                        Qx+=c[im]*(Q[id+(im+1)*nnz]-Q[id-im*nnz]);
-                      }
-                     u1[id]=coffx2[ix]*coffz2[iz]*u0[id]-coffx1[ix]*coffz1[iz]*(cos(theta[id])*dtx*Px-sin(theta[id])*dtz*Pz);
-                     w1[id]=coffx2[ix]*coffz2[iz]*w0[id]-coffx1[ix]*coffz1[iz]*(sin(theta[id])*dtx*Qx+cos(theta[id])*dtz*Qz);
-                   }
-                 }
+    dtx=dt/dx;
+    dtz=dt/dz;
+    if(id>=mm&&id<nnx*nnz-mm)
+    {
+        if(ix>=mm&&ix<(nnx-mm)&&iz>=mm&&iz<(nnz-mm))
+        {
+            Px=0.0;
+            Pz=0.0;
+            Qz=0.0;
+            Qx=0.0;
+            for(im=0;im<mm;im++)
+            {
+                Px+=c[im]*(P[id+(im+1)*nnz]-P[id-im*nnz]);
+                Pz+=c[im]*(P[id+im+1]      -P[id-im]);
+                Qz+=c[im]*(Q[id+im+1]      -Q[id-im]);
+                Qx+=c[im]*(Q[id+(im+1)*nnz]-Q[id-im*nnz]);
+            }
+            u1[id]=coffx2[ix]*coffz2[iz]*u0[id]-coffx1[ix]*coffz1[iz]*(cos(theta[id])*dtx*Px-sin(theta[id])*dtz*Pz);
+            w1[id]=coffx2[ix]*coffz2[iz]*w0[id]-coffx1[ix]*coffz1[iz]*(sin(theta[id])*dtx*Qx+cos(theta[id])*dtz*Qz);
+        }
+    }
 }
+
 /*******************func***********************/
 __global__ void update_stress(int nx,int nz,int nnx,int nnz,float dt,float dx,float dz,
                            float *u1,float *w1,float *P,float *Q,float *vp,int npml,
@@ -226,37 +228,38 @@ __global__ void update_stress(int nx,int nz,int nnx,int nnz,float dt,float dx,fl
                    }
                  }
 }
+
 /********************func**********************/
 __global__ void get_d0(float dx,float dz,int nnx,int nnz,int npml,float *vp)
 {
-   d0=3.0*vp[nnx*nnz/2]*log(100000.0)/(2.0*npml*((dx+dz)/2.0));
+    d0=3.0*vp[nnx*nnz/2]*log(100000.0)/(2.0*npml*((dx+dz)/2.0));
 }
 /*************func*******************/
 void pad_vv(int nx,int nz,int nnx,int nnz,int npml,float *ee)
 {
-     int ix,iz,id;
+    int ix,iz,id;
 
     for(id=0;id<nnx*nnz;id++)
-     {
-       ix=id/nnz;
-       iz=id%nnz;
-       if(ix<npml){
-           ee[id]=ee[npml*nnz+iz];  //left
-       }else if(ix>=nnx-npml){
-           ee[id]=ee[(nnx-npml-1)*nnz+iz];//right
-       }
-     }
+    {
+        ix=id/nnz;
+        iz=id%nnz;
+        if(ix<npml){
+            ee[id]=ee[npml*nnz+iz];  //left
+        }else if(ix>=nnx-npml){
+            ee[id]=ee[(nnx-npml-1)*nnz+iz];//right
+        }
+    }
     for(id=0;id<nnx*nnz;id++)
-     {
-       ix=id/nnz;
-       iz=id%nnz;
-       if(iz<npml){
-           ee[id]=ee[ix*nnz+npml];//up
-       }else if(iz>=nnz-npml){
-           ee[id]=ee[ix*nnz+nnz-npml-1];//down
-       }
-      // if(ee[id]==0){printf("ee[%d][%d]==0.0\n",ix,iz);exit(0);}
-     }
+    {
+        ix=id/nnz;
+        iz=id%nnz;
+        if(iz<npml){
+            ee[id]=ee[ix*nnz+npml];//up
+        }else if(iz>=nnz-npml){
+            ee[id]=ee[ix*nnz+nnz-npml-1];//down
+        }
+        // if(ee[id]==0){printf("ee[%d][%d]==0.0\n",ix,iz);exit(0);}
+    }
 }
 /*************func*******************/
 void read_file(char FN1[],char FN2[],char FN3[],char FN4[],int nx,int nz,int nnx,int nnz,
@@ -288,49 +291,49 @@ void read_file(char FN1[],char FN2[],char FN3[],char FN4[],int nx,int nz,int nnx
 /*************func*******************/
 __global__ void initial_coffe(float dt,int nn,float *coff1,float *coff2,float *acoff1,float *acoff2,int npml)
 {
-	 int id=threadIdx.x+blockDim.x*blockIdx.x;
+    int id=threadIdx.x+blockDim.x*blockIdx.x;
 
-           if(id<nn+2*npml)
-            {
-		 if(id<npml)
-		 {
-			 coff1[id]=1.0/(1.0+(dt*d0*pow((npml-id)*1.0/npml,2.0))/2.0);
-			 coff2[id]=coff1[id]*(1.0-(dt*d0*pow((npml-id)*1.0/npml,2.0))/2.0);
+    if(id<nn+2*npml)
+    {
+        if(id<npml)
+        {
+            coff1[id]=1.0/(1.0+(dt*d0*pow((npml-id)*1.0/npml,2.0))/2.0);
+            coff2[id]=coff1[id]*(1.0-(dt*d0*pow((npml-id)*1.0/npml,2.0))/2.0);
 
-			 acoff1[id]=1.0/(1.0+(dt*d0*pow(((npml-id)*1.0)/npml,2.0))/2.0);
-			 acoff2[id]=acoff1[id]*(1.0-(dt*d0*pow(((npml-id)*1.0)/npml,2.0))/2.0);
+            acoff1[id]=1.0/(1.0+(dt*d0*pow(((npml-id)*1.0)/npml,2.0))/2.0);
+            acoff2[id]=acoff1[id]*(1.0-(dt*d0*pow(((npml-id)*1.0)/npml,2.0))/2.0);
 
-		 }else if(id>=npml&&id<npml+nn){
+        }else if(id>=npml&&id<npml+nn){
 
-			 coff1[id]=1.0;
-			 coff2[id]=1.0;
+            coff1[id]=1.0;
+            coff2[id]=1.0;
 
-			 acoff1[id]=1.0;
-			 acoff2[id]=1.0;
+            acoff1[id]=1.0;
+            acoff2[id]=1.0;
 
-		 }else{
+        }else{
 
-			 coff1[id]=1.0/(1.0+(dt*d0*pow((id-nn-npml)*1.0/npml,2.0))/2.0);
-			 coff2[id]=coff1[id]*(1.0-(dt*d0*pow((id-nn-npml)*1.0/npml,2.0))/2.0);
+            coff1[id]=1.0/(1.0+(dt*d0*pow((id-nn-npml)*1.0/npml,2.0))/2.0);
+            coff2[id]=coff1[id]*(1.0-(dt*d0*pow((id-nn-npml)*1.0/npml,2.0))/2.0);
 
-			 acoff1[id]=1.0/(1.0+(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
-			 acoff2[id]=acoff1[id]*(1.0-(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
-		 }
-            }
+            acoff1[id]=1.0/(1.0+(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
+            acoff2[id]=acoff1[id]*(1.0-(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
+        }
+    }
 }
 /*************func*******************/
 __global__ void shot_record(int nnx, int nnz, int nx, int nz, int npml, int it, int nt, float *P, float *shot, bool flag)
 {
-	 int id=threadIdx.x+blockDim.x*blockIdx.x;
+    int id=threadIdx.x+blockDim.x*blockIdx.x;
 
-           if(id<nx)
-            {
-             if(flag){
-               shot[it+nt*id]=P[npml+nnz*(id+npml)];
-             }else{
-               P[npml+nnz*(id+npml)]=shot[it+nt*id];
-              }
-            }
+    if(id<nx)
+    {
+        if(flag){
+            shot[it+nt*id]=P[npml+nnz*(id+npml)];
+        }else{
+            P[npml+nnz*(id+npml)]=shot[it+nt*id];
+        }
+    }
 }
 /*************func**************/
 __global__ void mute_directwave(int nx,int nt,float dt,float favg,
@@ -345,75 +348,73 @@ __global__ void mute_directwave(int nx,int nt,float dt,float favg,
     int ix=id/nt;
     int it=id%nt;
 
-   if(id<nx*nt)
-   {
+    if(id<nx*nt)
+    {
         mu_x=dx*abs(ix-fs-(is-1)*ds);
         mu_z=dz*zs;
-        mu_t0=sqrtf(pow(mu_x,2)+pow(mu_z,2))/(vp[1]*(  1+(sqrtf(1+2*epsilu[1])-1) * cos(theta[1])  )   );
+        mu_t0=sqrtf(pow(mu_x,2)+pow(mu_z,2))/(vp[1]*(  1+(sqrtf(1+2*epsilu[1])-1) * cos(theta[1])));
         mu_t=(int)(2.0/(dt*favg));
         mu_nt=(int)(mu_t0/dt)+mu_t+tt;
 
-           if((it>(int)(mu_t0/dt)-tt)&&(it<mu_nt))
-              shot[id]=0.0;
-   }
+        if((it>(int)(mu_t0/dt)-tt)&&(it<mu_nt))
+            shot[id]=0.0;
+    }
 }
 /*************func*******************/
 __global__ void wavefield_bndr(int nnx, int nnz, int nx, int nz, int npml, int it, int nt,
                                float *P, float *Q, float *P_bndr, float *Q_bndr, bool flag)
 {
-	 int id=threadIdx.x+blockDim.x*blockIdx.x;
+    int id=threadIdx.x+blockDim.x*blockIdx.x;
 
-           if(id<2*nx+2*nz)
-            {
-            if(flag)/////////////////////////////////save boundary
-             {
-              if(id<nx){//up
+    if(id<2*nx+2*nz)
+    {
+        if(flag)/////////////////////////////////save boundary
+        {
+            if(id<nx){//up
 
-               P_bndr[it*(2*nx+2*nz)+id]=P[npml-1+nnz*(id+npml)];
-               Q_bndr[it*(2*nx+2*nz)+id]=Q[npml-1+nnz*(id+npml)];
+                P_bndr[it*(2*nx+2*nz)+id]=P[npml-1+nnz*(id+npml)];
+                Q_bndr[it*(2*nx+2*nz)+id]=Q[npml-1+nnz*(id+npml)];
 
-              }else if(id>=nx&&id<(2*nx)){//down
+            }else if(id>=nx&&id<(2*nx)){//down
 
-               P_bndr[it*(2*nx+2*nz)+id]=P[npml+nz+1+nnz*(id-nx+npml)];
-               Q_bndr[it*(2*nx+2*nz)+id]=Q[npml+nz+1+nnz*(id-nx+npml)];
+                P_bndr[it*(2*nx+2*nz)+id]=P[npml+nz+1+nnz*(id-nx+npml)];
+                Q_bndr[it*(2*nx+2*nz)+id]=Q[npml+nz+1+nnz*(id-nx+npml)];
 
+            }else if(id>=(2*nx)&&id<(2*nx+nz)){//left
 
-              }else if(id>=(2*nx)&&id<(2*nx+nz)){//left
+                P_bndr[it*(2*nx+2*nz)+id]=P[id-2*nx+npml+nnz*(npml-1)];
+                Q_bndr[it*(2*nx+2*nz)+id]=Q[id-2*nx+npml+nnz*(npml-1)];
 
-               P_bndr[it*(2*nx+2*nz)+id]=P[id-2*nx+npml+nnz*(npml-1)];
-               Q_bndr[it*(2*nx+2*nz)+id]=Q[id-2*nx+npml+nnz*(npml-1)];
+            }else if(id>=(2*nx+nz)){//right
 
-              }else if(id>=(2*nx+nz)){//right
+                P_bndr[it*(2*nx+2*nz)+id]=P[id-2*nx-nz+npml+nnz*(npml+nx+1)];
+                Q_bndr[it*(2*nx+2*nz)+id]=Q[id-2*nx-nz+npml+nnz*(npml+nx+1)];
 
-               P_bndr[it*(2*nx+2*nz)+id]=P[id-2*nx-nz+npml+nnz*(npml+nx+1)];
-               Q_bndr[it*(2*nx+2*nz)+id]=Q[id-2*nx-nz+npml+nnz*(npml+nx+1)];
-
-                }
-            }else{/////////////////////////////add boundary
-              if(id<nx){//up
-
-               P[npml-1+nnz*(id+npml)]=P_bndr[it*(2*nx+2*nz)+id];
-               Q[npml-1+nnz*(id+npml)]=Q_bndr[it*(2*nx+2*nz)+id];
-
-              }else if(id>=nx&&id<(2*nx)){//down
-
-               P[npml+nz+1+nnz*(id-nx+npml)]=P_bndr[it*(2*nx+2*nz)+id];
-               Q[npml+nz+1+nnz*(id-nx+npml)]=Q_bndr[it*(2*nx+2*nz)+id];
-
-
-              }else if(id>=(2*nx)&&id<(2*nx+nz)){//left
-
-               P[id-2*nx+npml+nnz*(npml-1)]=P_bndr[it*(2*nx+2*nz)+id];
-               Q[id-2*nx+npml+nnz*(npml-1)]=Q_bndr[it*(2*nx+2*nz)+id];
-
-              }else if(id>=(2*nx+nz)){//right
-
-               P[id-2*nx-nz+npml+nnz*(npml+nx+1)]=P_bndr[it*(2*nx+2*nz)+id];
-               Q[id-2*nx-nz+npml+nnz*(npml+nx+1)]=Q_bndr[it*(2*nx+2*nz)+id];
-
-                }
-             }
             }
+        }else{/////////////////////////////add boundary
+            if(id<nx){//up
+
+                P[npml-1+nnz*(id+npml)]=P_bndr[it*(2*nx+2*nz)+id];
+                Q[npml-1+nnz*(id+npml)]=Q_bndr[it*(2*nx+2*nz)+id];
+
+            }else if(id>=nx&&id<(2*nx)){//down
+
+                P[npml+nz+1+nnz*(id-nx+npml)]=P_bndr[it*(2*nx+2*nz)+id];
+                Q[npml+nz+1+nnz*(id-nx+npml)]=Q_bndr[it*(2*nx+2*nz)+id];
+
+            }else if(id>=(2*nx)&&id<(2*nx+nz)){//left
+
+                P[id-2*nx+npml+nnz*(npml-1)]=P_bndr[it*(2*nx+2*nz)+id];
+                Q[id-2*nx+npml+nnz*(npml-1)]=Q_bndr[it*(2*nx+2*nz)+id];
+
+            }else if(id>=(2*nx+nz)){//right
+
+                P[id-2*nx-nz+npml+nnz*(npml+nx+1)]=P_bndr[it*(2*nx+2*nz)+id];
+                Q[id-2*nx-nz+npml+nnz*(npml+nx+1)]=Q_bndr[it*(2*nx+2*nz)+id];
+
+            }
+        }
+    }
 }
 /*************func**************/
 __global__ void cal_migration(int nnx, int nnz, int nz, int npml, float *migration, float *s, float *g)
@@ -422,10 +423,10 @@ __global__ void cal_migration(int nnx, int nnz, int nz, int npml, float *migrati
     int ix=id/nz;
     int iz=id%nz;
 
-   if(id<nnx*nnz)
-   {
-      migration[id]+=s[iz+npml+nnz*(ix+npml)]*g[iz+npml+nnz*(ix+npml)];
-   }
+    if(id<nnx*nnz)
+    {
+        migration[id]+=s[iz+npml+nnz*(ix+npml)]*g[iz+npml+nnz*(ix+npml)];
+    }
 }
 /*************func**************/
 __global__ void cal_illumination(int nnx, int nnz, int nz, int npml, float *illumination, float *P, float *Q)
@@ -434,22 +435,22 @@ __global__ void cal_illumination(int nnx, int nnz, int nz, int npml, float *illu
     int ix=id/nz;
     int iz=id%nz;
 
-   if(id<nnx*nnz)
-   {
-      illumination[id]+=P[iz+npml+nnz*(ix+npml)]*P[iz+npml+nnz*(ix+npml)]
-                         +Q[iz+npml+nnz*(ix+npml)]*Q[iz+npml+nnz*(ix+npml)];
-      if(illumination[id]==0)illumination[id]=1.0;
-   }
+    if(id<nnx*nnz)
+    {
+        illumination[id]+=P[iz+npml+nnz*(ix+npml)]*P[iz+npml+nnz*(ix+npml)]+Q[iz+npml+nnz*(ix+npml)]*Q[iz+npml+nnz*(ix+npml)];
+        if(illumination[id]==0)
+            illumination[id]=1.0;
+    }
 }
 /*************func**************/
 __global__ void migration_illum(int nx, int nz, int npml, float *migration, float *illumination)
 {
     int id=threadIdx.x+blockDim.x*blockIdx.x;
 
-   if(id<nx*nz)
-   {
-      migration[id]/=illumination[id];
-   }
+    if(id<nx*nz)
+    {
+        migration[id]/=illumination[id];
+    }
 }
 /*************func**************/
 __global__ void Poynting_Adcigs(int nnz, int nx, int nz, int npml, int na, int da, int dcdp, float *adcigs,
@@ -471,19 +472,19 @@ __global__ void Poynting_Adcigs(int nnz, int nx, int nz, int npml, int na, int d
     float b2= Sgx*Sgx + Sgz*Sgz;
     float  a=(Ssx*Sgx + Ssz*Sgz)/(sqrtf(b1*b2)*(1 - 0.1));
 
-   if(id<nx/dcdp*nz)
-   {
-     if(a>=-1&&a<=1)
-      {
-         a=0.5*acosf(a)*180.0/pi;
-         ia=(int)(a/(da*1.0));
-         if(ia<na)
-          {
-             adcigs[iz+nz*ia+nz*na*(id/nz)] += s_P[iz+npml+nnz*(ix+npml)]*g_P[iz+npml+nnz*(ix+npml)]
+    if(id<nx/dcdp*nz)
+    {
+        if(a>=-1&&a<=1)
+        {
+            a=0.5*acosf(a)*180.0/pi;
+            ia=(int)(a/(da*1.0));
+            if(ia<na)
+            {
+                adcigs[iz+nz*ia+nz*na*(id/nz)] += s_P[iz+npml+nnz*(ix+npml)]*g_P[iz+npml+nnz*(ix+npml)]
                                                 *cosf(ia*pi/180.0)*cosf(ia*pi/180.0)*cosf(ia*pi/180.0);
-          }
-      }
-   }
+            }
+        }
+    }
 }
 /*************func**************/
 __global__ void adcigs_illum(int nx, int nz, int na, int da, int dcdp, float *adcigs, float *illumination)
@@ -492,201 +493,200 @@ __global__ void adcigs_illum(int nx, int nz, int na, int da, int dcdp, float *ad
     int ix=id/(nz*na)*dcdp;
     int iz=id%nz;
 
-   if(id<nx*nz/dcdp*na)
-   {
-      adcigs[id]/=illumination[iz+nz*ix];
-   }
+    if(id<nx*nz/dcdp*na)
+    {
+        adcigs[id]/=illumination[iz+nz*ix];
+    }
 }
 //a########################################################################
 int main(int argc,char *argv[])
 {
+    int is, it, nx, nz, nnx, nnz, nt, wtype, na, da, dcdp, nxa;
+    int ns, ds, fs, zs, npml;
+    float dx, dz, dt, t, pfac, favg;
+    float *coffx1,*coffx2,*coffz1,*coffz2,*acoffx1,*acoffx2,*acoffz1,*acoffz2;
+    float *v, *e, *d, *b;
+    float *vp, *epsilu, *deta, *theta;
+    float *s_u0, *s_u1, *s_px0, *s_qx0, *s_px1, *s_qx1;
+    float *s_w0, *s_w1, *s_pz0, *s_qz0, *s_pz1, *s_qz1;
+    float *s_P, *s_Q;
+    float *g_u0, *g_u1, *g_px0, *g_qx0, *g_px1, *g_qx1;
+    float *g_w0, *g_w1, *g_pz0, *g_qz0, *g_pz1, *g_qz1;
+    float *g_P, *g_Q;
+    float *shot_Dev, *shot_Hos, *s_P_bndr, *s_Q_bndr;
 
-	int is, it, nx, nz, nnx, nnz, nt, wtype, na, da, dcdp, nxa;
-	int ns, ds, fs, zs, npml;
-	float dx, dz, dt, t, pfac, favg;
-       float *coffx1,*coffx2,*coffz1,*coffz2,*acoffx1,*acoffx2,*acoffz1,*acoffz2;
-	float *v, *e, *d, *b;
-	float *vp, *epsilu, *deta, *theta;
-	float *s_u0, *s_u1, *s_px0, *s_qx0, *s_px1, *s_qx1;
-       float *s_w0, *s_w1, *s_pz0, *s_qz0, *s_pz1, *s_qz1;
-	float *s_P, *s_Q;
-	float *g_u0, *g_u1, *g_px0, *g_qx0, *g_px1, *g_qx1;
-       float *g_w0, *g_w1, *g_pz0, *g_qz0, *g_pz1, *g_qz1;
-	float *g_P, *g_Q;
-       float *shot_Dev, *shot_Hos, *s_P_bndr, *s_Q_bndr;
+    float *migration, *illumination, *adcigs;
+    float *Atemp;
 
-       float *migration, *illumination, *adcigs;
-       float *Atemp;
+    clock_t start, end, is_t0, is_t1;
+    /*************wavelet\boundary**************/
+    wtype=1;npml=50;
+    /********** dat document ***********/
+    /*    char FN1[250]={"waxian_vel_601_301.dat"};
+    char FN2[250]={"waxian_epsilon_601_301.dat"};
+    char FN3[250]={"waxian_delta_601_301.dat"};
+    char FN4[250]={"waxian_theta_601_301.dat"};
+    char FN5[250]={"waxian_45_shot_cal.dat"};
+    char FN6[250]={"waxian_45_snap.dat"};
+    char FN7[250]={"waxian_45_migration.dat"};
+    char FN8[250]={"waxian_45_illumination.dat"};
+    char FN9[250]={"waxian_45_adcigs.dat"};*/
 
-       clock_t start, end, is_t0, is_t1;
-/*************wavelet\boundary**************/
-          wtype=1;npml=50;
-/********** dat document ***********/
-      /*    char FN1[250]={"waxian_vel_601_301.dat"};
-          char FN2[250]={"waxian_epsilon_601_301.dat"};
-          char FN3[250]={"waxian_delta_601_301.dat"};
-          char FN4[250]={"waxian_theta_601_301.dat"};
-	   char FN5[250]={"waxian_45_shot_cal.dat"};
-	   char FN6[250]={"waxian_45_snap.dat"};
-	   char FN7[250]={"waxian_45_migration.dat"};
-	   char FN8[250]={"waxian_45_illumination.dat"};
-	   char FN9[250]={"waxian_45_adcigs.dat"};*/
+    /*     char FN1[250]={"layers_vel_601_301.dat"};
+    char FN2[250]={"layers_epsilon_601_301.dat"};
+    char FN3[250]={"layers_delta_601_301.dat"};
+    char FN4[250]={"layers_theta_601_301.dat"};
+    char FN5[250]={"layers_shot_cal.dat"};
+    char FN6[250]={"layers_snap.dat"};
+    char FN7[250]={"layers_migration.dat"};
+    char FN8[250]={"layers_illumination.dat"};
+    char FN9[250]={"layers_adcigs65.dat"}; */
 
-     /*     char FN1[250]={"layers_vel_601_301.dat"};
-          char FN2[250]={"layers_epsilon_601_301.dat"};
-          char FN3[250]={"layers_delta_601_301.dat"};
-          char FN4[250]={"layers_theta_601_301.dat"};
-	   char FN5[250]={"layers_shot_cal.dat"};
-	   char FN6[250]={"layers_snap.dat"};
-	   char FN7[250]={"layers_migration.dat"};
-	   char FN8[250]={"layers_illumination.dat"};
-	   char FN9[250]={"layers_adcigs65.dat"}; */
-
-     /*     char FN1[250]={"thrust_vel_711_300.dat"};
-          char FN2[250]={"thrust_epsilon_711_300.dat"};
-          char FN3[250]={"thrust_delta_711_300.dat"};
-          char FN4[250]={"thrust_theta_711_300_theta10-20-30.dat"};
-	   char FN5[250]={"thrust_shot_cal.dat"};
-	   char FN6[250]={"thrust_snap.dat"};
-	   char FN7[250]={"thrust_migration.dat"};
-	   char FN8[250]={"thrust_illumination.dat"};
-	   char FN9[250]={"thrust_adcigs.dat"};*/
+    /*     char FN1[250]={"thrust_vel_711_300.dat"};
+    char FN2[250]={"thrust_epsilon_711_300.dat"};
+    char FN3[250]={"thrust_delta_711_300.dat"};
+    char FN4[250]={"thrust_theta_711_300_theta10-20-30.dat"};
+    char FN5[250]={"thrust_shot_cal.dat"};
+    char FN6[250]={"thrust_snap.dat"};
+    char FN7[250]={"thrust_migration.dat"};
+    char FN8[250]={"thrust_illumination.dat"};
+    char FN9[250]={"thrust_adcigs.dat"};*/
 
     /*      char FN1[250]={"hesh_vel_883_301.dat"};
-          char FN2[250]={"hesh_epsilon_883_301.dat"};
-          char FN3[250]={"hesh_delta_883_301.dat"};
-          char FN4[250]={"hesh_theta_883_301_0.75.dat"};
-	   char FN5[250]={"hesh_shot_cal.dat"};
-	   char FN6[250]={"hesh_snap.dat"};
-	   char FN7[250]={"hesh_migration.dat"};
-	   char FN8[250]={"hesh_illumination.dat"};
-	   char FN9[250]={"hesh_adcigs.dat"}; */
+    char FN2[250]={"hesh_epsilon_883_301.dat"};
+    char FN3[250]={"hesh_delta_883_301.dat"};
+    char FN4[250]={"hesh_theta_883_301_0.75.dat"};
+    char FN5[250]={"hesh_shot_cal.dat"};
+    char FN6[250]={"hesh_snap.dat"};
+    char FN7[250]={"hesh_migration.dat"};
+    char FN8[250]={"hesh_illumination.dat"};
+    char FN9[250]={"hesh_adcigs.dat"}; */
 
-   /*       char FN1[250]={"yongan_vel_650_301.dat"};
-          char FN2[250]={"epsilon_const0.3.dat"};
-          char FN3[250]={"delta_const0.2.dat"};
-          char FN4[250]={"theta_const30.dat"};
-	   char FN5[250]={"yongan_shot_cal.dat"};
-	   char FN6[250]={"yongan_snap.dat"};
-	   char FN7[250]={"yongan_migration.dat"};
-	   char FN8[250]={"yongan_illumination.dat"};
-	   char FN9[250]={"yongan_adcigs.dat"};*/
+    /*       char FN1[250]={"yongan_vel_650_301.dat"};
+    char FN2[250]={"epsilon_const0.3.dat"};
+    char FN3[250]={"delta_const0.2.dat"};
+    char FN4[250]={"theta_const30.dat"};
+    char FN5[250]={"yongan_shot_cal.dat"};
+    char FN6[250]={"yongan_snap.dat"};
+    char FN7[250]={"yongan_migration.dat"};
+    char FN8[250]={"yongan_illumination.dat"};
+    char FN9[250]={"yongan_adcigs.dat"};*/
 
-          char FN1[250]={"BP_vel.dat"};
-          char FN2[250]={"BP_epsilon.dat"};
-          char FN3[250]={"BP_delta.dat"};
-          char FN4[250]={"BP_theta.dat"};
-	   char FN5[250]={"BP_shot_cal.dat"};
-	   char FN6[250]={"BP_snap.dat"};
-	   char FN7[250]={"BP_migration.dat"};
-	   char FN8[250]={"BP_illumination.dat"};
-	   char FN9[250]={"BP_adcigs.dat"};
-/********aaa************/
-	 FILE *fpsnap, *fpshot, *fpmig, *fpillum, *fpadcigs;
-        fpshot=fopen(FN5,"wb");
-        fpsnap=fopen(FN6,"wb");
-        fpmig=fopen(FN7,"wb");
-        fpillum=fopen(FN8,"wb");
-        fpadcigs=fopen(FN9,"wb");
+    char FN1[250]={"BP_vel.dat"};
+    char FN2[250]={"BP_epsilon.dat"};
+    char FN3[250]={"BP_delta.dat"};
+    char FN4[250]={"BP_theta.dat"};
+    char FN5[250]={"BP_shot_cal.dat"};
+    char FN6[250]={"BP_snap.dat"};
+    char FN7[250]={"BP_migration.dat"};
+    char FN8[250]={"BP_illumination.dat"};
+    char FN9[250]={"BP_adcigs.dat"};
+    /********aaa************/
+    FILE *fpsnap, *fpshot, *fpmig, *fpillum, *fpadcigs;
+    fpshot=fopen(FN5,"wb");
+    fpsnap=fopen(FN6,"wb");
+    fpmig=fopen(FN7,"wb");
+    fpillum=fopen(FN8,"wb");
+    fpadcigs=fopen(FN9,"wb");
 
 
-/********* parameters *************/
+    /********* parameters *************/
 
-          nx=1700;
-	   nz=601;         favg=20;     pfac=10.0;
+    nx=1700;
+    nz=601;         favg=20;     pfac=10.0;
 
- 	   dx=5.0;
-          dz=5.0;
+    dx=5.0;
+    dz=5.0;
 
-	   nt=9001;
-          dt=0.0005;
+    nt=9001;
+    dt=0.0005;
 
-          ns=340;
-          fs=nx/ns/2;
-          ds=nx/ns;
-          zs=1;
+    ns=340;
+    fs=nx/ns/2;
+    ds=nx/ns;
+    zs=1;
 
-          na=65;
-          da=1;
-          dcdp=1;
-/*************v***************/
-          nxa=(int)(nx/dcdp);
-          nnx=nx+2*npml;
-          nnz=nz+2*npml;
-/************a*************/
-    	 Atemp=(float*)malloc(nz*nx/dcdp*na*sizeof(float));
+    na=65;
+    da=1;
+    dcdp=1;
+    /*************v***************/
+    nxa=(int)(nx/dcdp);
+    nnx=nx+2*npml;
+    nnz=nz+2*npml;
+    /************a*************/
+    Atemp=(float*)malloc(nz*nx/dcdp*na*sizeof(float));
 
-    	 v=(float*)malloc(nnz*nnx*sizeof(float));
-    	 e=(float*)malloc(nnz*nnx*sizeof(float));
-    	 d=(float*)malloc(nnz*nnx*sizeof(float));
-    	 b=(float*)malloc(nnz*nnx*sizeof(float));
-    	 shot_Hos=(float*)malloc(nt*nx*sizeof(float));
-        read_file(FN1,FN2,FN3,FN4,nx,nz,nnx,nnz,v,e,d,b,npml);
-/****************************/
-        pad_vv(nx,nz,nnx,nnz,npml,e);
-        pad_vv(nx,nz,nnx,nnz,npml,d);
-        pad_vv(nx,nz,nnx,nnz,npml,v);
-        pad_vv(nx,nz,nnx,nnz,npml,b);
+    v=(float*)malloc(nnz*nnx*sizeof(float));
+    e=(float*)malloc(nnz*nnx*sizeof(float));
+    d=(float*)malloc(nnz*nnx*sizeof(float));
+    b=(float*)malloc(nnz*nnx*sizeof(float));
+    shot_Hos=(float*)malloc(nt*nx*sizeof(float));
+    read_file(FN1,FN2,FN3,FN4,nx,nz,nnx,nnz,v,e,d,b,npml);
+    /****************************/
+    pad_vv(nx,nz,nnx,nnz,npml,e);
+    pad_vv(nx,nz,nnx,nnz,npml,d);
+    pad_vv(nx,nz,nnx,nnz,npml,v);
+    pad_vv(nx,nz,nnx,nnz,npml,b);
 
-        cudaSetDevice(0);// initialize device, default device=0;
-	 check_gpu_error("Failed to initialize device!");
+    cudaSetDevice(0);// initialize device, default device=0;
+    check_gpu_error("Failed to initialize device!");
 
-/****************************/
-        cudaMalloc(&vp, nnz*nnx*sizeof(float));
-        cudaMalloc(&epsilu, nnz*nnx*sizeof(float));
-        cudaMalloc(&deta, nnz*nnx*sizeof(float));
-        cudaMalloc(&theta, nnz*nnx*sizeof(float));
-	 cudaMemcpy(vp, v, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
-	 cudaMemcpy(epsilu, e, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
-	 cudaMemcpy(deta, d, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
-	 cudaMemcpy(theta, b, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
-/****************************/
-        cudaMalloc(&s_u0, nnz*nnx*sizeof(float));    cudaMalloc(&s_u1, nnz*nnx*sizeof(float));
-        cudaMalloc(&s_w0, nnz*nnx*sizeof(float));    cudaMalloc(&s_w1, nnz*nnx*sizeof(float));
+    /****************************/
+    cudaMalloc(&vp, nnz*nnx*sizeof(float));
+    cudaMalloc(&epsilu, nnz*nnx*sizeof(float));
+    cudaMalloc(&deta, nnz*nnx*sizeof(float));
+    cudaMalloc(&theta, nnz*nnx*sizeof(float));
+    cudaMemcpy(vp, v, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(epsilu, e, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(deta, d, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(theta, b, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
+    /****************************/
+    cudaMalloc(&s_u0, nnz*nnx*sizeof(float));    cudaMalloc(&s_u1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_w0, nnz*nnx*sizeof(float));    cudaMalloc(&s_w1, nnz*nnx*sizeof(float));
 
-        cudaMalloc(&s_P, nnz*nnx*sizeof(float));     cudaMalloc(&s_Q, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_P, nnz*nnx*sizeof(float));     cudaMalloc(&s_Q, nnz*nnx*sizeof(float));
 
-        cudaMalloc(&s_px0, nnz*nnx*sizeof(float));   cudaMalloc(&s_px1, nnz*nnx*sizeof(float));
-        cudaMalloc(&s_pz0, nnz*nnx*sizeof(float));   cudaMalloc(&s_pz1, nnz*nnx*sizeof(float));
-        cudaMalloc(&s_qx0, nnz*nnx*sizeof(float));   cudaMalloc(&s_qx1, nnz*nnx*sizeof(float));
-        cudaMalloc(&s_qz0, nnz*nnx*sizeof(float));   cudaMalloc(&s_qz1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_px0, nnz*nnx*sizeof(float));   cudaMalloc(&s_px1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_pz0, nnz*nnx*sizeof(float));   cudaMalloc(&s_pz1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_qx0, nnz*nnx*sizeof(float));   cudaMalloc(&s_qx1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_qz0, nnz*nnx*sizeof(float));   cudaMalloc(&s_qz1, nnz*nnx*sizeof(float));
 
-        cudaMalloc(&g_u0, nnz*nnx*sizeof(float));    cudaMalloc(&g_u1, nnz*nnx*sizeof(float));
-        cudaMalloc(&g_w0, nnz*nnx*sizeof(float));    cudaMalloc(&g_w1, nnz*nnx*sizeof(float));
+    cudaMalloc(&g_u0, nnz*nnx*sizeof(float));    cudaMalloc(&g_u1, nnz*nnx*sizeof(float));
+    cudaMalloc(&g_w0, nnz*nnx*sizeof(float));    cudaMalloc(&g_w1, nnz*nnx*sizeof(float));
 
-        cudaMalloc(&g_P, nnz*nnx*sizeof(float));     cudaMalloc(&g_Q, nnz*nnx*sizeof(float));
+    cudaMalloc(&g_P, nnz*nnx*sizeof(float));     cudaMalloc(&g_Q, nnz*nnx*sizeof(float));
 
-        cudaMalloc(&g_px0, nnz*nnx*sizeof(float));   cudaMalloc(&g_px1, nnz*nnx*sizeof(float));
-        cudaMalloc(&g_pz0, nnz*nnx*sizeof(float));   cudaMalloc(&g_pz1, nnz*nnx*sizeof(float));
-        cudaMalloc(&g_qx0, nnz*nnx*sizeof(float));   cudaMalloc(&g_qx1, nnz*nnx*sizeof(float));
-        cudaMalloc(&g_qz0, nnz*nnx*sizeof(float));   cudaMalloc(&g_qz1, nnz*nnx*sizeof(float));
+    cudaMalloc(&g_px0, nnz*nnx*sizeof(float));   cudaMalloc(&g_px1, nnz*nnx*sizeof(float));
+    cudaMalloc(&g_pz0, nnz*nnx*sizeof(float));   cudaMalloc(&g_pz1, nnz*nnx*sizeof(float));
+    cudaMalloc(&g_qx0, nnz*nnx*sizeof(float));   cudaMalloc(&g_qx1, nnz*nnx*sizeof(float));
+    cudaMalloc(&g_qz0, nnz*nnx*sizeof(float));   cudaMalloc(&g_qz1, nnz*nnx*sizeof(float));
 
-        cudaMalloc(&coffx1, nnx*sizeof(float));     cudaMalloc(&coffx2, nnx*sizeof(float));
-        cudaMalloc(&coffz1, nnz*sizeof(float));     cudaMalloc(&coffz2, nnz*sizeof(float));
-        cudaMalloc(&acoffx1, nnx*sizeof(float));    cudaMalloc(&acoffx2, nnx*sizeof(float));
-        cudaMalloc(&acoffz1, nnz*sizeof(float));    cudaMalloc(&acoffz2, nnz*sizeof(float));
+    cudaMalloc(&coffx1, nnx*sizeof(float));     cudaMalloc(&coffx2, nnx*sizeof(float));
+    cudaMalloc(&coffz1, nnz*sizeof(float));     cudaMalloc(&coffz2, nnz*sizeof(float));
+    cudaMalloc(&acoffx1, nnx*sizeof(float));    cudaMalloc(&acoffx2, nnx*sizeof(float));
+    cudaMalloc(&acoffz1, nnz*sizeof(float));    cudaMalloc(&acoffz2, nnz*sizeof(float));
 
-        cudaMalloc(&shot_Dev, nx*nt*sizeof(float));
-        cudaMalloc(&s_P_bndr, nt*(2*nx+2*nz)*sizeof(float));
-        cudaMalloc(&s_Q_bndr, nt*(2*nx+2*nz)*sizeof(float));
+    cudaMalloc(&shot_Dev, nx*nt*sizeof(float));
+    cudaMalloc(&s_P_bndr, nt*(2*nx+2*nz)*sizeof(float));
+    cudaMalloc(&s_Q_bndr, nt*(2*nx+2*nz)*sizeof(float));
 
-        cudaMalloc(&migration, nz*nx*sizeof(float));
-        cudaMalloc(&illumination, nz*nx*sizeof(float));
-        cudaMalloc(&adcigs, nz*na*nxa*sizeof(float));
-/******************************/
-	 check_gpu_error("Failed to allocate memory for variables!");
+    cudaMalloc(&migration, nz*nx*sizeof(float));
+    cudaMalloc(&illumination, nz*nx*sizeof(float));
+    cudaMalloc(&adcigs, nz*na*nxa*sizeof(float));
+    /******************************/
+    check_gpu_error("Failed to allocate memory for variables!");
 
-        get_d0<<<1, 1>>>(dx, dz, nnx, nnz, npml, vp);
-        initial_coffe<<<(nnx+511)/512, 512>>>(dt,nx,coffx1,coffx2,acoffx1,acoffx2,npml);
-        initial_coffe<<<(nnz+511)/512, 512>>>(dt,nz,coffz1,coffz2,acoffz1,acoffz2,npml);
+    get_d0<<<1, 1>>>(dx, dz, nnx, nnz, npml, vp);
+    initial_coffe<<<(nnx+511)/512, 512>>>(dt,nx,coffx1,coffx2,acoffx1,acoffx2,npml);
+    initial_coffe<<<(nnz+511)/512, 512>>>(dt,nz,coffz1,coffz2,acoffz1,acoffz2,npml);
 
-        cudaMemset(migration, 0, nz*nx*sizeof(float));
-        cudaMemset(illumination, 0, nz*nx*sizeof(float));
-        cudaMemset(adcigs, 0, nz*na*nxa*sizeof(float));
+    cudaMemset(migration, 0, nz*nx*sizeof(float));
+    cudaMemset(illumination, 0, nz*nx*sizeof(float));
+    cudaMemset(adcigs, 0, nz*na*nxa*sizeof(float));
 
-        printf("--------------------------------------------------------\n");
-        printf("---   \n");
-        start = clock();
+    printf("--------------------------------------------------------\n");
+    printf("---   \n");
+    start = clock();
 /**********IS Loop start*******/
    for(is=1;is<=ns;is++)
     {
@@ -791,74 +791,72 @@ int main(int argc,char *argv[])
 
        }//it loop end
 
-
-
-      is_t1 = clock();    printf("%.2f (min)\n", ns, ((float)(is_t1-is_t0))/60.0/CLOCKS_PER_SEC);
+      is_t1 = clock();
+      printf("%.2f (min)\n", ns, ((float)(is_t1-is_t0))/60.0/CLOCKS_PER_SEC);
     }//is loop end
 
-   migration_illum<<<(nx*nz+511)/512, 512>>>(nx, nz, npml, migration, illumination);
-   adcigs_illum<<<(nxa*nz*na+511)/512, 512>>>(nx, nz, na, da, dcdp, adcigs, illumination);
+    migration_illum<<<(nx*nz+511)/512, 512>>>(nx, nz, npml, migration, illumination);
+    adcigs_illum<<<(nxa*nz*na+511)/512, 512>>>(nx, nz, na, da, dcdp, adcigs, illumination);
 
 
-   cudaMemcpy(e, migration, nz*nx*sizeof(float), cudaMemcpyDeviceToHost);
-   laplace_filter(1,nz,nx,e,d);
-   fwrite(d,sizeof(float),nx*nz,fpmig);
+    cudaMemcpy(e, migration, nz*nx*sizeof(float), cudaMemcpyDeviceToHost);
+    laplace_filter(1,nz,nx,e,d);
+    fwrite(d,sizeof(float),nx*nz,fpmig);
 
-   cudaMemcpy(e, illumination, nz*nx*sizeof(float), cudaMemcpyDeviceToHost);
-   fwrite(e,sizeof(float),nx*nz,fpillum);
+    cudaMemcpy(e, illumination, nz*nx*sizeof(float), cudaMemcpyDeviceToHost);
+    fwrite(e,sizeof(float),nx*nz,fpillum);
 
-   cudaMemcpy(Atemp, adcigs, nz*nxa*na*sizeof(float), cudaMemcpyDeviceToHost);
-   fwrite(Atemp,sizeof(float),nz*nxa*na,fpadcigs);
+    cudaMemcpy(Atemp, adcigs, nz*nxa*na*sizeof(float), cudaMemcpyDeviceToHost);
+    fwrite(Atemp,sizeof(float),nz*nxa*na,fpadcigs);
 
     end = clock();
-/*********IS Loop end*********/
-   printf("---   The forward is over    \n");
-   printf("---   Complete!!!!!!!!! \n");
-   printf("total %d shots: %.2f (min)\n", ns, ((float)(end-start))/60.0/CLOCKS_PER_SEC);
+    /*********IS Loop end*********/
+    printf("---   The forward is over    \n");
+    printf("---   Complete!!!!!!!!! \n");
+    printf("total %d shots: %.2f (min)\n", ns, ((float)(end-start))/60.0/CLOCKS_PER_SEC);
 
 
 
-/***********close************/
-          fclose(fpsnap);   fclose(fpshot);  fclose(fpmig);  fclose(fpillum);  fclose(fpadcigs);
-/***********free*************/
-       cudaFree(coffx1);       cudaFree(coffx2);
-       cudaFree(coffz1);       cudaFree(coffz2);
-       cudaFree(acoffx1);      cudaFree(acoffx2);
-       cudaFree(acoffz1);      cudaFree(acoffz2);
+    /***********close************/
+    fclose(fpsnap);   fclose(fpshot);  fclose(fpmig);  fclose(fpillum);  fclose(fpadcigs);
+    /***********free*************/
+    cudaFree(coffx1);       cudaFree(coffx2);
+    cudaFree(coffz1);       cudaFree(coffz2);
+    cudaFree(acoffx1);      cudaFree(acoffx2);
+    cudaFree(acoffz1);      cudaFree(acoffz2);
 
-       cudaFree(s_u0);           cudaFree(s_u1);
-       cudaFree(s_w0);           cudaFree(s_w1);
+    cudaFree(s_u0);           cudaFree(s_u1);
+    cudaFree(s_w0);           cudaFree(s_w1);
 
-       cudaFree(s_P);            cudaFree(s_Q);
+    cudaFree(s_P);            cudaFree(s_Q);
 
-       cudaFree(s_px0);          cudaFree(s_px1);
-       cudaFree(s_pz0);          cudaFree(s_pz1);
-       cudaFree(s_qx0);          cudaFree(s_qx1);
-       cudaFree(s_qz0);          cudaFree(s_qz1);
+    cudaFree(s_px0);          cudaFree(s_px1);
+    cudaFree(s_pz0);          cudaFree(s_pz1);
+    cudaFree(s_qx0);          cudaFree(s_qx1);
+    cudaFree(s_qz0);          cudaFree(s_qz1);
 
-       cudaFree(g_u0);           cudaFree(g_u1);
-       cudaFree(g_w0);           cudaFree(g_w1);
+    cudaFree(g_u0);           cudaFree(g_u1);
+    cudaFree(g_w0);           cudaFree(g_w1);
 
-       cudaFree(g_P);            cudaFree(g_Q);
+    cudaFree(g_P);            cudaFree(g_Q);
 
-       cudaFree(g_px0);          cudaFree(g_px1);
-       cudaFree(g_pz0);          cudaFree(g_pz1);
-       cudaFree(g_qx0);          cudaFree(g_qx1);
-       cudaFree(g_qz0);          cudaFree(g_qz1);
+    cudaFree(g_px0);          cudaFree(g_px1);
+    cudaFree(g_pz0);          cudaFree(g_pz1);
+    cudaFree(g_qx0);          cudaFree(g_qx1);
+    cudaFree(g_qz0);          cudaFree(g_qz1);
 
-       cudaFree(shot_Dev);
-       cudaFree(s_P_bndr);        cudaFree(s_Q_bndr);
+    cudaFree(shot_Dev);
+    cudaFree(s_P_bndr);        cudaFree(s_Q_bndr);
 
-       cudaFree(migration);
-       cudaFree(illumination);
-       cudaFree(adcigs);
+    cudaFree(migration);
+    cudaFree(illumination);
+    cudaFree(adcigs);
 
-       cudaFree(vp);
-       cudaFree(epsilu);
-       cudaFree(deta);
-       cudaFree(theta);
-/***************host free*****************/
-	free(v);	free(e);	free(d);free(b);
-       free(shot_Hos);   free(Atemp);
+    cudaFree(vp);
+    cudaFree(epsilu);
+    cudaFree(deta);
+    cudaFree(theta);
+    /***************host free*****************/
+    free(v);	free(e);	free(d);free(b);
+    free(shot_Hos);   free(Atemp);
 }
-

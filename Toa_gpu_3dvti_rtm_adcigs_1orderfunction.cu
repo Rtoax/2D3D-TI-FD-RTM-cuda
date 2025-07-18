@@ -45,8 +45,8 @@ void check_gpu_error (const char *msg)
 {
     cudaError_t err = cudaGetLastError ();
     if (cudaSuccess != err) {
-	printf("Cuda error: %s: %s\n", msg, cudaGetErrorString (err));
-	exit(0);
+        printf("Cuda error: %s: %s\n", msg, cudaGetErrorString (err));
+        exit(0);
     }
 }
 //a################################################################################
@@ -54,39 +54,39 @@ __global__ void add_source(float pfac,int fsx,int fsy,int sz,int nx,int ny,int n
                         float favg,int wtype,int npml,int is,int dsx,int dsy,float *P,float *Q,int nsx)
 /*< generate ricker wavelet with time deley >*/
 {
-       int ixs,iys,izs;
-       float x_,xx_,tdelay,ts,source=0.0,sx,sy;
+    int ixs,iys,izs;
+    float x_,xx_,tdelay,ts,source=0.0,sx,sy;
 
-       tdelay=1.0/favg;
-       ts=t-tdelay;
+    tdelay=1.0/favg;
+    ts=t-tdelay;
 
-      // sx=fsx+is%nsx*dsx;
-      // sy=fsy+is/nsx*dsy;
+    // sx=fsx+is%nsx*dsx;
+    // sy=fsy+is/nsx*dsy;
 
-       sx=fsx+is*dsx;
-       sy=fsy+is*dsy;
+    sx=fsx+is*dsx;
+    sy=fsy+is*dsy;
 
-	if(wtype==1)//ricker wavelet
-	{
-          x_=favg*ts;
-          xx_=x_*x_;
-          source=(1-2*pi*pi*(xx_))*exp(-(pi*pi*xx_));
-	}else if(wtype==2){//derivative of gaussian
-          x_=(-4)*favg*favg*pi*pi/log(0.1);
-          source=(-2)*pi*pi*ts*exp(-x_*ts*ts);
-        }else if(wtype==3){//derivative of gaussian
-          x_=(-1)*favg*favg*pi*pi/log(0.1);
-          source=exp(-x_*ts*ts);
-        }
+    if(wtype==1)//ricker wavelet
+    {
+        x_=favg*ts;
+        xx_=x_*x_;
+        source=(1-2*pi*pi*(xx_))*exp(-(pi*pi*xx_));
+    }else if(wtype==2){//derivative of gaussian
+        x_=(-4)*favg*favg*pi*pi/log(0.1);
+        source=(-2)*pi*pi*ts*exp(-x_*ts*ts);
+    }else if(wtype==3){//derivative of gaussian
+        x_=(-1)*favg*favg*pi*pi/log(0.1);
+        source=exp(-x_*ts*ts);
+    }
 
-       if(t<=2*tdelay)
-       {
-	     ixs = sx+npml-1;
-	     iys = sy+npml-1;
-            izs = sz+npml-1;
-            P[izs+ixs*nnz+iys*nnz*nnx]+=pfac*source;
-            Q[izs+ixs*nnz+iys*nnz*nnx]+=pfac*source;
-       }
+    if(t<=2*tdelay)
+    {
+        ixs = sx+npml-1;
+        iys = sy+npml-1;
+        izs = sz+npml-1;
+        P[izs+ixs*nnz+iys*nnz*nnx]+=pfac*source;
+        Q[izs+ixs*nnz+iys*nnz*nnx]+=pfac*source;
+    }
 }
 /*******************func*********************/
 __global__ void update_vel(int nx,int ny,int nz,int nnx,int nny,int nnz,int npml,float dt,float dx,float dy,float dz,

@@ -441,15 +441,15 @@ __global__ void update_stress(int nx,
     }
 }
 
+/**
+ * Expand the border
+ */
 void pad_vv(int nx,
             int nz,
             int nnx,
             int nnz,
             int npml,
             float *ee)
-/**
- * Expand the border
- */
 {
     int ix,iz,id;
 
@@ -487,6 +487,9 @@ void pad_vv(int nx,
     }
 }
 
+/**
+ * Calculate the PML coefficient
+ */
 __global__ void initial_coffe(float dt,
                               int nn,
                               float *coff1,
@@ -494,10 +497,6 @@ __global__ void initial_coffe(float dt,
                               float *acoff1,
                               float *acoff2,
                               int npml)
-/**
- * Calculate the PML coefficient
- *
- */
 {
     int id=threadIdx.x+blockDim.x*blockIdx.x;
 
@@ -533,6 +532,12 @@ __global__ void initial_coffe(float dt,
     }
 }
 
+/**
+ * Record or load Receiver wavefield
+ *      (nx) >> (nx,nt)
+ *           or
+ *   (nx,nt) >> (nx)
+ */
 __global__ void shot_record(int nnx,
                             int nnz,
                             int nx,
@@ -543,12 +548,6 @@ __global__ void shot_record(int nnx,
                             float *P,
                             float *shot,
                             bool record)
-/**
- * Record or load Receiver wavefield
- *      (nx) >> (nx,nt)
- *           or
- *   (nx,nt) >> (nx)
- */
 {
     int id=threadIdx.x+blockDim.x*blockIdx.x;
 
@@ -567,6 +566,10 @@ __global__ void shot_record(int nnx,
     }
 }
 
+/**
+ * Record or backword the boundary wave field
+ *
+ */
 __global__ void wavefield_bndr(int nnx,
                                int nnz,
                                int nx,
@@ -579,10 +582,6 @@ __global__ void wavefield_bndr(int nnx,
                                float *P_bndr,
                                float *Q_bndr,
                                bool record)
-/**
- * Record or backword the boundary wave field
- *
- */
 {
     int id=threadIdx.x+blockDim.x*blockIdx.x;
 
@@ -649,6 +648,9 @@ __global__ void wavefield_bndr(int nnx,
     }
 }
 
+/**
+ *mute direct waves
+ */
 __global__ void mute_directwave(int nx,
                                 int nt,
                                 float dt,
@@ -663,9 +665,6 @@ __global__ void mute_directwave(int nx,
                                 float *epsilon,
                                 float *shot,
                                 int tt)
-/**
- *mute direct waves
- */
 {
     int it = threadIdx.x+blockDim.x*blockIdx.x;
 
@@ -689,6 +688,9 @@ __global__ void mute_directwave(int nx,
     }
 }
 
+/**
+ * illumination matrix
+ */
 __global__ void cal_illumination(int nnx,
                                  int nnz,
                                  int nz,
@@ -696,9 +698,6 @@ __global__ void cal_illumination(int nnx,
                                  float *illumination,
                                  float *P,
                                  float *Q)
-/**
- * illumination matrix
- */
 {
     int id = threadIdx.x+blockDim.x*blockIdx.x;
     int ix = id/nz;
@@ -714,6 +713,9 @@ __global__ void cal_illumination(int nnx,
     }
 }
 
+/**
+ * RTM migration
+ */
 __global__ void cal_migration(int nnx,
                               int nnz,
                               int nz,
@@ -721,9 +723,6 @@ __global__ void cal_migration(int nnx,
                               float *migration,
                               float *s,
                               float *g)
-/**
- * RTM migration
- */
 {
     int id = threadIdx.x+blockDim.x*blockIdx.x;
     int ix = id/nz;
@@ -735,14 +734,14 @@ __global__ void cal_migration(int nnx,
     }
 }
 
+/**
+ *  illuminate
+ */
 __global__ void migration_illum(int nx,
                                 int nz,
                                 int npml,
                                 float *migration,
                                 float *illumination)
-/**
- *  illuminate
- */
 {
     int id=threadIdx.x+blockDim.x*blockIdx.x;
 
@@ -752,7 +751,10 @@ __global__ void migration_illum(int nx,
     }
 }
 
-
+/**
+ *  poynting vector extraction ADCIGs
+ *    "Copyright(C) Madagascar:user/pyang/Mrtmadcig.c"
+ */
 __global__ void Poynting_Adcigs(int nnz,
                                 int nx,
                                 int nz,
@@ -768,10 +770,6 @@ __global__ void Poynting_Adcigs(int nnz,
                                 float *g_Q,
                                 float *g_u,
                                 float *g_w)
-/**
- *  poynting vector extraction ADCIGs
- *    "Copyright(C) Madagascar:user/pyang/Mrtmadcig.c"
- */
 {
     int id = threadIdx.x+blockDim.x*blockIdx.x;
     int ix = id/nz;
@@ -804,15 +802,15 @@ __global__ void Poynting_Adcigs(int nnz,
     }
 }
 
+/**
+ *  illuminate the adcigs
+ */
 __global__ void adcigs_illum(int nx,
                              int nz,
                              int nangle,
                              int dangle,
                              float *adcigs,
                              float *illumination)
-/**
- *  illuminate the adcigs
- */
 {
     int id = threadIdx.x+blockDim.x*blockIdx.x;
     int ix = id/(nz*nangle);
@@ -824,15 +822,15 @@ __global__ void adcigs_illum(int nx,
     }
 }
 
+/**
+ * Stack adcigs to migration
+ * Can suppress low-frequency random noise
+ */
 void stk_adcigs(int nx,
                 int nz,
                 int nangle,
                 float *adcigs,
                 float *migration)
-/**
- * Stack adcigs to migration
- * Can suppress low-frequency random noise
- */
 {
     int ix,iz,ia,id,ido;
     float stk;
@@ -855,14 +853,14 @@ void stk_adcigs(int nx,
     print_success("Done with stack ADCIGs into Migration.\n");
 }
 
+/**
+ * Draw thin adcigs
+ */
 void adcigs_smiled(int nx,
                    int nz,
                    int nangle,
                    int dAdcigs,
                    float *adcigs)
-/**
- * Draw thin adcigs
- */
 {
     int ix,iz,ia,id,ido;
     float *temp;
@@ -1016,7 +1014,10 @@ void readFile( char FNvelocity[],
     }
 }
 
-
+/**
+ * FD
+ *         Author: Rong Tao
+ */
 void FD( char FNvelocity[],
          char FNepsilon[],
          char FNdelta[],
@@ -1038,10 +1039,6 @@ void FD( char FNvelocity[],
          float favg,
          float pfac,
          bool writeSnap)
-/**
- * FD
- *         Author: Rong Tao
- */
 {
     float *v, *e, *d;
     float *vp, *epsilon, *delta;
@@ -1230,8 +1227,10 @@ void FD( char FNvelocity[],
     print_success("Finish Finite Difference\n");
 }//FD
 
-
-
+/**
+ * RTM
+ *         Author: Rong Tao
+ */
 void RTM(char FNvelocity[],
          char FNepsilon[],
          char FNdelta[],
@@ -1262,10 +1261,6 @@ void RTM(char FNvelocity[],
          int dAdcigs,
          bool readShot,
          bool writeSnap)
-/**
- * RTM
- *         Author: Rong Tao
- */
 {
     float *v, *e, *d;
     float *vp, *epsilon, *delta;
@@ -1801,8 +1796,6 @@ int main(int argc,char *argv[])
     print_success("Done！ File in:\n");
     system("pwd");
 
-    return 1;
+    return 0;
 
 }//end of main
-
-

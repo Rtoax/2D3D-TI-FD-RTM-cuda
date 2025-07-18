@@ -1,23 +1,23 @@
 /*a*****************************************************
-a*         2D Quasi Acoustic VTI Medium  FD & RTM   
-b*  P + sv wave and get rid of sv        
+a*         2D Quasi Acoustic VTI Medium  FD & RTM
+b*  P + sv wave and get rid of sv
 c*  GPU(CUDA) ,poynting adcigs, read shot
 d*
 e*******************************************************
 f*
 g* Ps:  the Quasi Acoustic VTI function:
-h*      
-i*          du/dt=1/rho*dp/dx , 
-j*          dw/dt=1/rho*dq/dz ,  
+h*
+i*          du/dt=1/rho*dp/dx ,
+j*          dw/dt=1/rho*dq/dz ,
 k*          dp/dt=rho*vpx^2*du/dx+rho*vp*vpn*dw/dz ,
 l*          dq/dt=rho*vp*vpn*du/dx+rho*vp^2*dw/dz ,
 m*                     vpx^2=vp^2*(1+2*epsilon);
 n*                     vpn^2=vp^2*(1+2*delta);
 o*
 p*******************************************************
-q*                           initial: 2017.02 Rong Tao 
-r*                            adcigs: 2017.04 Rong Tao 
-s*                            modify: 2018.02 Rong Tao                                 
+q*                           initial: 2017.02 Rong Tao
+r*                            adcigs: 2017.04 Rong Tao
+s*                            modify: 2018.02 Rong Tao
 u*                             print: 2018.05 Rong Tao
 v*
 w*
@@ -158,37 +158,37 @@ __constant__ float c[mm]={1.196289,-0.0797526,0.009570313,-0.0006975447};
 void mBar(float fBar)
 /* show progress bar */
 {
- 
+
     int i,j,k,m;
-    //for ( i=0;i< Nbar+6; i++ ) 
+    //for ( i=0;i< Nbar+6; i++ )
     //    printf("\b");
-    k = Nbar*fBar; 
+    k = Nbar*fBar;
     m = fBar*100;
     printf("[");
-    for ( i=0;i<k;i++ ) 
+    for ( i=0;i<k;i++ )
         printf("=");
-    for ( j=0;j<Nbar-k;j++ ) 
+    for ( j=0;j<Nbar-k;j++ )
         printf(" ");
-    printf("]%3d%%",m); 
+    printf("]%3d%%",m);
 }
 
-void check_gpu_error (const char *msg) 
+void check_gpu_error (const char *msg)
 /* check GPU errors */
 {
     cudaError_t err = cudaGetLastError ();
     char message[1024];
     if (cudaSuccess != err) {
         sprintf(message,"Cuda error: %s: %s\n", msg, cudaGetErrorString(err));
-        print_error(message); 
-        exit(0);   
+        print_error(message);
+        exit(0);
     }
     print_success("Check gpu successfully.\n");
 }
 
-void laplace_filter(int adj, 
-                    int nz, 
-                    int nx, 
-                    float *in, 
+void laplace_filter(int adj,
+                    int nz,
+                    int nx,
+                    float *in,
                     float *out)
 /**
  * linear operator
@@ -197,7 +197,7 @@ void laplace_filter(int adj,
  */
 {
     int iz,ix,j;
-    for (j=0;j<nx*nz;j++) 
+    for (j=0;j<nx*nz;j++)
         out[j]=0.0;
 
     for (ix=0; ix < nx; ix++) {
@@ -239,27 +239,27 @@ void laplace_filter(int adj,
     }
 }
 
-__global__ void add_source( float pfac, 
-                            float xsn,  
-                            float zsn, 
-                            int nx,  
-                            int nz,  
-                            int nnx,  
+__global__ void add_source( float pfac,
+                            float xsn,
+                            float zsn,
+                            int nx,
+                            int nz,
+                            int nnx,
                             int nnz,
-                            float dt,  
-                            float t,  
+                            float dt,
+                            float t,
                             float favg,
-                            int wtype, 
+                            int wtype,
                             int npml,
-                            int is, 
+                            int is,
                             int ds,
-                            float *P, 
+                            float *P,
                             float *Q)
 /* generate ricker wavelet with time deley */
 {
     int ixs,izs;
-    float x_,xx_,tdelay,ts,source=0.0,fs; 
-  
+    float x_,xx_,tdelay,ts,source=0.0,fs;
+
     tdelay = 1.0/favg;
     ts = t-tdelay;
     fs = xsn+(is-1)*ds;
@@ -282,7 +282,7 @@ __global__ void add_source( float pfac,
     }
 
     if(t <= 2*tdelay)
-    {         
+    {
         ixs = (int)( fs + 0.5) + npml - 1;
         izs = (int)(zsn + 0.5) + npml - 1;
 
@@ -291,23 +291,23 @@ __global__ void add_source( float pfac,
     }
 }
 
-__global__ void update_vel(int nx,  
-                           int nz, 
-                           int nnx,   
-                           int nnz, 
+__global__ void update_vel(int nx,
+                           int nz,
+                           int nnx,
+                           int nnz,
                            int npml,
                            float dt,
-                           float dx,    
+                           float dx,
                            float dz,
-                           float *u0,   
+                           float *u0,
                            float *w0,
-                           float *u1,   
+                           float *u1,
                            float *w1,
-                           float *P,    
+                           float *P,
                            float *Q,
-                           float *coffx1,  
+                           float *coffx1,
                            float *coffx2,
-                           float *coffz1,  
+                           float *coffz1,
                            float *coffz2)
 {
     int id=threadIdx.x+blockDim.x*blockIdx.x;
@@ -338,36 +338,36 @@ __global__ void update_vel(int nx,
     }
 }
 
-__global__ void update_stress(int nx,   
-                              int nz,    
-                              int nnx,    
+__global__ void update_stress(int nx,
+                              int nz,
+                              int nnx,
                               int nnz,
-                              float dt,    
-                              float dx,    
+                              float dt,
+                              float dx,
                               float dz,
-                              float *u1,    
+                              float *u1,
                               float *w1,
-                              float *P,    
-                              float *Q,    
-                              float *vp,    
+                              float *P,
+                              float *Q,
+                              float *vp,
                               int npml,
-                              float *px1,    
+                              float *px1,
                               float *px0,
-                              float *pz1,    
+                              float *pz1,
                               float *pz0,
-                              float *qx1,    
+                              float *qx1,
                               float *qx0,
-                              float *qz1,    
+                              float *qz1,
                               float *qz0,
-                              float *acoffx1,    
+                              float *acoffx1,
                               float *acoffx2,
-                              float *acoffz1,    
+                              float *acoffz1,
                               float *acoffz2,
-                              float *delta,    
+                              float *delta,
                               float *epsilon,
-                              int fs,    
-                              int ds,    
-                              int zs,    
+                              int fs,
+                              int ds,
+                              int zs,
                               int is,
                               bool SV)
 {
@@ -402,7 +402,7 @@ __global__ void update_stress(int nx,
                 }else{
 
                     ee = 0.5*(1-cos(pi*((sqrtf(rx*rx+rz*rz)-r)*4.0/(R*3.0-1))))*epsilon[id];
-                    dd = 0.5*(1-cos(pi*((sqrtf(rx*rx+rz*rz)-r)*4.0/(R*3.0-1))))*delta[id]; 
+                    dd = 0.5*(1-cos(pi*((sqrtf(rx*rx+rz*rz)-r)*4.0/(R*3.0-1))))*delta[id];
 
                 }//else
 
@@ -439,7 +439,7 @@ __global__ void update_stress(int nx,
             Q[id] = qx1[id] + qz1[id];
         }
     }
-}   
+}
 
 void pad_vv(int nx,
             int nz,
@@ -452,16 +452,16 @@ void pad_vv(int nx,
  */
 {
     int ix,iz,id;
- 
+
     for(id=0; id<nnx*nnz; id++) {
 
         ix = id/nnz;
         iz = id%nnz;
-        
+
         /* left */
         if(ix<npml){
 
-            ee[id] = ee[npml*nnz+iz]; 
+            ee[id] = ee[npml*nnz+iz];
 
         /* right */
         }else if(ix>=nnx-npml){
@@ -498,14 +498,14 @@ __global__ void initial_coffe(float dt,
  * Calculate the PML coefficient
  *
  */
-{		
+{
     int id=threadIdx.x+blockDim.x*blockIdx.x;
 
     if(id < nn+2*npml) {
 
         /* The front of the inner */
-        if(id<npml) {   
-    
+        if(id<npml) {
+
             coff1[id] = 1.0/(1.0+(dt*d0*pow((npml-0.5-id)/npml,2.0))/2.0);
             coff2[id] = coff1[id]*(1.0-(dt*d0*pow((npml-0.5-id)/npml,2.0))/2.0);
 
@@ -529,19 +529,19 @@ __global__ void initial_coffe(float dt,
 
             acoff1[id] = 1.0/(1.0+(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
             acoff2[id] = acoff1[id]*(1.0-(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
-        }	
-    }       
+        }
+    }
 }
 
-__global__ void shot_record(int nnx, 
-                            int nnz, 
-                            int nx, 
-                            int nz, 
-                            int npml, 
-                            int it,    
-                            int nt, 
-                            float *P, 
-                            float *shot, 
+__global__ void shot_record(int nnx,
+                            int nnz,
+                            int nx,
+                            int nz,
+                            int npml,
+                            int it,
+                            int nt,
+                            float *P,
+                            float *shot,
                             bool record)
 /**
  * Record or load Receiver wavefield
@@ -549,7 +549,7 @@ __global__ void shot_record(int nnx,
  *           or
  *   (nx,nt) >> (nx)
  */
-{		
+{
     int id=threadIdx.x+blockDim.x*blockIdx.x;
 
     if(id<nx) {
@@ -564,26 +564,26 @@ __global__ void shot_record(int nnx,
 
             P[npml+nnz*(id+npml)] = shot[it+nt*id];
         }
-    }       
+    }
 }
 
-__global__ void wavefield_bndr(int nnx,    
-                               int nnz, 
-                               int nx,    
-                               int nz, 
-                               int npml, 
-                               int it, 
-                               int nt, 
-                               float *P, 
-                               float *Q, 
-                               float *P_bndr, 
-                               float *Q_bndr, 
+__global__ void wavefield_bndr(int nnx,
+                               int nnz,
+                               int nx,
+                               int nz,
+                               int npml,
+                               int it,
+                               int nt,
+                               float *P,
+                               float *Q,
+                               float *P_bndr,
+                               float *Q_bndr,
                                bool record)
 /**
  * Record or backword the boundary wave field
  *
  */
-{		
+{
     int id=threadIdx.x+blockDim.x*blockIdx.x;
 
     if(id<2*nx+2*nz) {
@@ -599,7 +599,7 @@ __global__ void wavefield_bndr(int nnx,
 
             /* bottom */
             }else if(id>=nx&&id<(2*nx)){
-   
+
                 P_bndr[it*(2*nx+2*nz)+id] = P[npml+nz+1+nnz*(id-nx+npml)];
                 Q_bndr[it*(2*nx+2*nz)+id] = Q[npml+nz+1+nnz*(id-nx+npml)];
 
@@ -628,7 +628,7 @@ __global__ void wavefield_bndr(int nnx,
 
             /* bottom */
             }else if(id>=nx&&id<(2*nx)){
-   
+
                 P[npml+nz+1+nnz*(id-nx+npml)] = P_bndr[it*(2*nx+2*nz)+id];
                 Q[npml+nz+1+nnz*(id-nx+npml)] = Q_bndr[it*(2*nx+2*nz)+id];
 
@@ -646,7 +646,7 @@ __global__ void wavefield_bndr(int nnx,
 
             }
         }
-    }       
+    }
 }
 
 __global__ void mute_directwave(int nx,
@@ -655,9 +655,9 @@ __global__ void mute_directwave(int nx,
                                 float favg,
                                 float dx,
                                 float dz,
-                                int fs,   
-                                int ds,   
-                                int zs,   
+                                int fs,
+                                int ds,
+                                int zs,
                                 int is,
                                 float *vp,
                                 float *epsilon,
@@ -690,11 +690,11 @@ __global__ void mute_directwave(int nx,
 }
 
 __global__ void cal_illumination(int nnx,
-                                 int nnz, 
-                                 int nz, 
-                                 int npml, 
-                                 float *illumination, 
-                                 float *P, 
+                                 int nnz,
+                                 int nz,
+                                 int npml,
+                                 float *illumination,
+                                 float *P,
                                  float *Q)
 /**
  * illumination matrix
@@ -714,12 +714,12 @@ __global__ void cal_illumination(int nnx,
     }
 }
 
-__global__ void cal_migration(int nnx, 
-                              int nnz, 
-                              int nz, 
-                              int npml, 
-                              float *migration, 
-                              float *s, 
+__global__ void cal_migration(int nnx,
+                              int nnz,
+                              int nz,
+                              int npml,
+                              float *migration,
+                              float *s,
                               float *g)
 /**
  * RTM migration
@@ -735,10 +735,10 @@ __global__ void cal_migration(int nnx,
     }
 }
 
-__global__ void migration_illum(int nx, 
-                                int nz, 
-                                int npml, 
-                                float *migration, 
+__global__ void migration_illum(int nx,
+                                int nz,
+                                int npml,
+                                float *migration,
                                 float *illumination)
 /**
  *  illuminate
@@ -753,20 +753,20 @@ __global__ void migration_illum(int nx,
 }
 
 
-__global__ void Poynting_Adcigs(int nnz, 
-                                int nx, 
-                                int nz, 
-                                int npml, 
-                                int nangle, 
-                                int dangle, 
-                                float *adcigs, 
-                                float *s_P, 
-                                float *s_Q, 
-                                float *s_u, 
-                                float *s_w, 
-                                float *g_P, 
-                                float *g_Q, 
-                                float *g_u, 
+__global__ void Poynting_Adcigs(int nnz,
+                                int nx,
+                                int nz,
+                                int npml,
+                                int nangle,
+                                int dangle,
+                                float *adcigs,
+                                float *s_P,
+                                float *s_Q,
+                                float *s_u,
+                                float *s_w,
+                                float *g_P,
+                                float *g_Q,
+                                float *g_u,
                                 float *g_w)
 /**
  *  poynting vector extraction ADCIGs
@@ -794,9 +794,9 @@ __global__ void Poynting_Adcigs(int nnz,
 
           a = 0.5*acosf(a)*180.0/pi;
          ia = (int)(a/(dangle*1.0));
-         
+
             if(ia<nangle) {
-                adcigs[iz+nz*ia+nz*nangle*(id/nz)] 
+                adcigs[iz+nz*ia+nz*nangle*(id/nz)]
                     += s_P[iz+npml+nnz*(ix+npml)]*g_P[iz+npml+nnz*(ix+npml)]
                       *cosf(ia*pi/180.0)*cosf(ia*pi/180.0)*cosf(ia*pi/180.0);
             }
@@ -804,11 +804,11 @@ __global__ void Poynting_Adcigs(int nnz,
     }
 }
 
-__global__ void adcigs_illum(int nx, 
-                             int nz,  
-                             int nangle,  
-                             int dangle,  
-                             float *adcigs,  
+__global__ void adcigs_illum(int nx,
+                             int nz,
+                             int nangle,
+                             int dangle,
+                             float *adcigs,
                              float *illumination)
 /**
  *  illuminate the adcigs
@@ -859,7 +859,7 @@ void adcigs_smiled(int nx,
                    int nz,
                    int nangle,
                    int dAdcigs,
-                   float *adcigs) 
+                   float *adcigs)
 /**
  * Draw thin adcigs
  */
@@ -887,19 +887,19 @@ void adcigs_smiled(int nx,
     print_success("Done with smile ADCIGs.\n");
 }
 
-void readFile( char FNvelocity[],   
-               char FNepsilon[],  
+void readFile( char FNvelocity[],
+               char FNepsilon[],
                char FNdelta[],
-               int nx,  
+               int nx,
                int nz,
-               int nnx,  
+               int nnx,
                int nnz,
-               float dx,  
+               float dx,
                float dz,
-               float favg,  
+               float favg,
                float dt,
-               float *v,  
-               float *e,  
+               float *v,
+               float *e,
                float *d,
                int npml)
 {
@@ -911,21 +911,21 @@ void readFile( char FNvelocity[],
     char msg[1024];
     FILE *fp1,*fp2,*fp3;
 
-    
+
     if((fp1=fopen(FNvelocity,"rb"))==NULL){
-        
+
         sprintf(msg, "error open <%s>!\n",FNvelocity);
         print_error(msg);
         exit(0);
     }
     if((fp2=fopen(FNepsilon,"rb"))==NULL){
-        
+
         sprintf(msg, "error open <%s>!\n",FNepsilon);
         print_error(msg);
         exit(0);
     }
     if((fp3=fopen(FNdelta,"rb"))==NULL){
-        
+
         sprintf(msg, "error open <%s>!\n",FNdelta);
         print_error(msg);
         exit(0);
@@ -973,12 +973,12 @@ void readFile( char FNvelocity[],
     print_info(msg);
     sprintf(msg,"      Delta Range (%.4f - %.4f)\n",dmin,dmax);
     print_info(msg);
-        
+
     /* boundary */
     pad_vv(nx,nz,nnx,nnz,npml,e);
     pad_vv(nx,nz,nnx,nnz,npml,d);
-    pad_vv(nx,nz,nnx,nnz,npml,v); 
-      
+    pad_vv(nx,nz,nnx,nnz,npml,v);
+
     H_min=dx<dz?dx:dz;
     dt_max = 0.5*H_min/vmin;
     dxz_max = vmax/favg*0.2;
@@ -991,27 +991,27 @@ void readFile( char FNvelocity[],
         print_warning("You need have to redefine DT ! \n");
         exit(0);
     }
-    if ( favg >= vmin/( 5.0*(dx>dz?dx:dz) ) 
+    if ( favg >= vmin/( 5.0*(dx>dz?dx:dz) )
       || favg >= vmin/( 5.0*(dx>dz?dx:dz) ) ) {
         print_warning("Non-dispersion relation not satisfied! \n");
         exit(0);
-    } 
-    /* following 
+    }
+    /* following
      * Copyright@ Madagascar */
-    else if ( mm == 2 )     
+    else if ( mm == 2 )
         C = 0.857;
-    else if ( mm == 3 )     
+    else if ( mm == 3 )
         C = 0.8;
-    else if ( mm == 4 )     
+    else if ( mm == 4 )
         C = 0.777;
-    else if ( mm == 5 )     
+    else if ( mm == 5 )
         C = 0.759;
 
     tmp = dt*vmax*sqrtf( 1.0/(dx*dx)+1.0/(dz*dz) );
     if ( tmp >= C){
-        
+
         sprintf(msg, "Stability condition not satisfied! tmp = %f, C = %f\n",tmp,C);
-        print_warning(msg); 
+        print_warning(msg);
         exit(0);
     }
 }
@@ -1019,23 +1019,23 @@ void readFile( char FNvelocity[],
 
 void FD( char FNvelocity[],
          char FNepsilon[],
-         char FNdelta[], 
+         char FNdelta[],
          char FNCalShot[],
          char FNSnap[],
          char FNIllumination[],
          int wtype,
          int npml,
-         int nx, 
+         int nx,
          int nz,
-         float dx, 
+         float dx,
          float dz,
-         int nt, 
-         float dt, 
-         int ns, 
-         int fs, 
-         int ds, 
+         int nt,
+         float dt,
+         int ns,
+         int fs,
+         int ds,
          int zs,
-         float favg, 
+         float favg,
          float pfac,
          bool writeSnap)
 /**
@@ -1064,7 +1064,7 @@ void FD( char FNvelocity[],
 
     /* FILE pointer */
     FILE *fpCalShot = fopen(FNCalShot,"wb");
-    FILE *fpSnap;              
+    FILE *fpSnap;
     if(writeSnap) {
 
         fpSnap = fopen(FNSnap,"wb");
@@ -1086,7 +1086,7 @@ void FD( char FNvelocity[],
     shot_Hos=(float*)malloc(nt*nx*sizeof(float));
 
     /* initialize device, default device=0; */
-    cudaSetDevice(0); 
+    cudaSetDevice(0);
     check_gpu_error("Failed to initialize device!");
     CHECK_gpu(cudaDeviceReset());
 
@@ -1102,17 +1102,17 @@ void FD( char FNvelocity[],
 
     /* source wavefield device memory */
     cudaMalloc(&s_u0, nnz*nnx*sizeof(float)); cudaMalloc(&s_u1, nnz*nnx*sizeof(float));
-    cudaMalloc(&s_w0, nnz*nnx*sizeof(float)); cudaMalloc(&s_w1, nnz*nnx*sizeof(float));  
-    cudaMalloc(&s_P, nnz*nnx*sizeof(float));  cudaMalloc(&s_Q, nnz*nnx*sizeof(float)); 
-    cudaMalloc(&s_px0, nnz*nnx*sizeof(float));cudaMalloc(&s_px1, nnz*nnx*sizeof(float));  
-    cudaMalloc(&s_pz0, nnz*nnx*sizeof(float));cudaMalloc(&s_pz1, nnz*nnx*sizeof(float));   
-    cudaMalloc(&s_qx0, nnz*nnx*sizeof(float));cudaMalloc(&s_qx1, nnz*nnx*sizeof(float));   
-    cudaMalloc(&s_qz0, nnz*nnx*sizeof(float));cudaMalloc(&s_qz1, nnz*nnx*sizeof(float));   
-    
+    cudaMalloc(&s_w0, nnz*nnx*sizeof(float)); cudaMalloc(&s_w1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_P, nnz*nnx*sizeof(float));  cudaMalloc(&s_Q, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_px0, nnz*nnx*sizeof(float));cudaMalloc(&s_px1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_pz0, nnz*nnx*sizeof(float));cudaMalloc(&s_pz1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_qx0, nnz*nnx*sizeof(float));cudaMalloc(&s_qx1, nnz*nnx*sizeof(float));
+    cudaMalloc(&s_qz0, nnz*nnx*sizeof(float));cudaMalloc(&s_qz1, nnz*nnx*sizeof(float));
+
     /* boundary absorb coefficient device memory */
-    cudaMalloc(&coffx1, nnx*sizeof(float));   cudaMalloc(&acoffx1, nnx*sizeof(float));     
+    cudaMalloc(&coffx1, nnx*sizeof(float));   cudaMalloc(&acoffx1, nnx*sizeof(float));
     cudaMalloc(&coffx2, nnx*sizeof(float));   cudaMalloc(&acoffx2, nnx*sizeof(float));
-    cudaMalloc(&coffz1, nnz*sizeof(float));   cudaMalloc(&acoffz1, nnz*sizeof(float));     
+    cudaMalloc(&coffz1, nnz*sizeof(float));   cudaMalloc(&acoffz1, nnz*sizeof(float));
     cudaMalloc(&coffz2, nnz*sizeof(float));   cudaMalloc(&acoffz2, nnz*sizeof(float));
 
     cudaMalloc(&shot_Dev, nx*nt*sizeof(float));
@@ -1135,25 +1135,25 @@ void FD( char FNvelocity[],
 
     char msg[1024];
     /* Starting IS loop */
-    for(is=1; is<=ns; is++)	 {  
+    for(is=1; is<=ns; is++)	 {
 
         time = clock();
         sprintf(msg, "IS =%3d/%d ",is,ns);
         print_info(msg);
         mBar(1.0*is/(1.0*ns));
 
-        cudaMemset(s_u0, 0, nnz*nnx*sizeof(float));  cudaMemset(s_u1, 0, nnz*nnx*sizeof(float));    
-        cudaMemset(s_w0, 0, nnz*nnx*sizeof(float));  cudaMemset(s_w1, 0, nnz*nnx*sizeof(float));   
-        cudaMemset(s_P, 0, nnz*nnx*sizeof(float));   cudaMemset(s_Q, 0, nnz*nnx*sizeof(float));     
-        cudaMemset(s_px0, 0, nnz*nnx*sizeof(float)); cudaMemset(s_px1, 0, nnz*nnx*sizeof(float)); 
-        cudaMemset(s_pz0, 0, nnz*nnx*sizeof(float)); cudaMemset(s_pz1, 0, nnz*nnx*sizeof(float)); 
-        cudaMemset(s_qx0, 0, nnz*nnx*sizeof(float)); cudaMemset(s_qx1, 0, nnz*nnx*sizeof(float)); 
-        cudaMemset(s_qz0, 0, nnz*nnx*sizeof(float)); cudaMemset(s_qz1, 0, nnz*nnx*sizeof(float));    
-        
+        cudaMemset(s_u0, 0, nnz*nnx*sizeof(float));  cudaMemset(s_u1, 0, nnz*nnx*sizeof(float));
+        cudaMemset(s_w0, 0, nnz*nnx*sizeof(float));  cudaMemset(s_w1, 0, nnz*nnx*sizeof(float));
+        cudaMemset(s_P, 0, nnz*nnx*sizeof(float));   cudaMemset(s_Q, 0, nnz*nnx*sizeof(float));
+        cudaMemset(s_px0, 0, nnz*nnx*sizeof(float)); cudaMemset(s_px1, 0, nnz*nnx*sizeof(float));
+        cudaMemset(s_pz0, 0, nnz*nnx*sizeof(float)); cudaMemset(s_pz1, 0, nnz*nnx*sizeof(float));
+        cudaMemset(s_qx0, 0, nnz*nnx*sizeof(float)); cudaMemset(s_qx1, 0, nnz*nnx*sizeof(float));
+        cudaMemset(s_qz0, 0, nnz*nnx*sizeof(float)); cudaMemset(s_qz1, 0, nnz*nnx*sizeof(float));
+
         cudaMemset(shot_Dev, 0, nt*nx*sizeof(float));
 
         /* forward */
-        for(it=0,t=dt; it<nt; it++,t+=dt) { 
+        for(it=0,t=dt; it<nt; it++,t+=dt) {
 
             add_source<<<1,1>>>(pfac, fs,zs,nx,nz,nnx,nnz,dt,t,favg,wtype,npml,is,ds,s_P,s_Q);
             update_vel<<<(nnx*nnz+511)/512, 512>>>
@@ -1163,9 +1163,9 @@ void FD( char FNvelocity[],
                           (nx,nz,nnx,nnz,dt,dx,dz,s_u1,s_w1,s_P,s_Q,vp,npml,
                            s_px1,s_px0,s_pz1,s_pz0,s_qx1,s_qx0,s_qz1,s_qz0,
                            acoffx1,acoffx2,acoffz1,acoffz2,delta,epsilon,fs,ds,zs,is,false);
-            s_u0 = s_u1;   s_w0 = s_w1; 
-            s_px0 = s_px1; s_pz0 = s_pz1; 
-            s_qx0 = s_qx1; s_qz0 = s_qz1; 
+            s_u0 = s_u1;   s_w0 = s_w1;
+            s_px0 = s_px1; s_pz0 = s_pz1;
+            s_qx0 = s_qx1; s_qz0 = s_qz1;
 
             shot_record<<<(nx+511)/512, 512>>>
                         (nnx, nnz, nx, nz, npml, it, nt, s_P, shot_Dev, true);
@@ -1190,7 +1190,7 @@ void FD( char FNvelocity[],
         time = clock() - time;
         printf(", %f min\n", ((float)time)/60.0/CLOCKS_PER_SEC);
 
-    }//is 
+    }//is
 
     /* output multi-shot illumination */
     cudaMemcpy(e, illumination, nz*nx*sizeof(float), cudaMemcpyDeviceToHost);
@@ -1199,33 +1199,33 @@ void FD( char FNvelocity[],
 
     /* file close */
     if(writeSnap)
-        fclose(fpSnap);  
+        fclose(fpSnap);
     fclose(fpCalShot);
-    fclose(fpIllunmination);  
+    fclose(fpIllunmination);
 
     /* device memory free */
-    cudaFree(coffx1);     cudaFree(acoffx1);      
+    cudaFree(coffx1);     cudaFree(acoffx1);
     cudaFree(coffx2);     cudaFree(acoffx2);
-    cudaFree(coffz1);     cudaFree(acoffz1);      
+    cudaFree(coffz1);     cudaFree(acoffz1);
     cudaFree(coffz2);     cudaFree(acoffz2);
 
-    cudaFree(s_u0);       cudaFree(s_u1);          
-    cudaFree(s_w0);       cudaFree(s_w1);           
-    cudaFree(s_P);        cudaFree(s_Q);            
-    cudaFree(s_px0);      cudaFree(s_px1);        
-    cudaFree(s_pz0);      cudaFree(s_pz1);         
-    cudaFree(s_qx0);      cudaFree(s_qx1);         
-    cudaFree(s_qz0);      cudaFree(s_qz1);         
+    cudaFree(s_u0);       cudaFree(s_u1);
+    cudaFree(s_w0);       cudaFree(s_w1);
+    cudaFree(s_P);        cudaFree(s_Q);
+    cudaFree(s_px0);      cudaFree(s_px1);
+    cudaFree(s_pz0);      cudaFree(s_pz1);
+    cudaFree(s_qx0);      cudaFree(s_qx1);
+    cudaFree(s_qz0);      cudaFree(s_qz1);
 
     cudaFree(shot_Dev);
 
     cudaFree(illumination);
 
     /* host memory free */
-    free(v);	
-    free(e);	
+    free(v);
+    free(e);
     free(d);
-    free(shot_Hos);  
+    free(shot_Hos);
 
     print_success("Finish Finite Difference\n");
 }//FD
@@ -1234,7 +1234,7 @@ void FD( char FNvelocity[],
 
 void RTM(char FNvelocity[],
          char FNepsilon[],
-         char FNdelta[], 
+         char FNdelta[],
          char FNObsShot[],
          char FNCalShot[],
          char FNSnap[],
@@ -1245,22 +1245,22 @@ void RTM(char FNvelocity[],
          char FNIntervalAdcigs[],
          int wtype,
          int npml,
-         int nx, 
+         int nx,
          int nz,
-         float dx, 
+         float dx,
          float dz,
-         int nt, 
-         float dt, 
-         int ns, 
-         int fs, 
-         int ds, 
+         int nt,
+         float dt,
+         int ns,
+         int fs,
+         int ds,
          int zs,
-         float favg, 
+         float favg,
          float pfac,
-         int nangle, 
-         int dangle, 
+         int nangle,
+         int dangle,
          int dAdcigs,
-         bool readShot, 
+         bool readShot,
          bool writeSnap)
 /**
  * RTM
@@ -1302,7 +1302,7 @@ void RTM(char FNvelocity[],
 
         fpCalShot = fopen(FNCalShot,"wb");
     }
-    FILE *fpSnap;              
+    FILE *fpSnap;
     if(writeSnap) {
 
         fpSnap = fopen(FNSnap,"wb");
@@ -1331,7 +1331,7 @@ void RTM(char FNvelocity[],
     shot_Hos=(float*)malloc(nt*nx*sizeof(float));
 
     /* initialize device, default device=0; */
-    cudaSetDevice(0); 
+    cudaSetDevice(0);
     check_gpu_error("Failed to initialize device!");
     CHECK_gpu(cudaDeviceReset());
 
@@ -1346,27 +1346,27 @@ void RTM(char FNvelocity[],
     cudaMemcpy(delta, d, nnz*nnx*sizeof(float), cudaMemcpyHostToDevice);
 
     /* source wavefield device memory */      /* receiver wavefield device memory */
-    cudaMalloc(&s_u0, nnz*nnx*sizeof(float));  cudaMalloc(&g_u0, nnz*nnx*sizeof(float));   
+    cudaMalloc(&s_u0, nnz*nnx*sizeof(float));  cudaMalloc(&g_u0, nnz*nnx*sizeof(float));
     cudaMalloc(&s_u1, nnz*nnx*sizeof(float));  cudaMalloc(&g_u1, nnz*nnx*sizeof(float));
-    cudaMalloc(&s_w0, nnz*nnx*sizeof(float));  cudaMalloc(&g_w0, nnz*nnx*sizeof(float));    
+    cudaMalloc(&s_w0, nnz*nnx*sizeof(float));  cudaMalloc(&g_w0, nnz*nnx*sizeof(float));
     cudaMalloc(&s_w1, nnz*nnx*sizeof(float));  cudaMalloc(&g_w1, nnz*nnx*sizeof(float));
 
-    cudaMalloc(&s_P, nnz*nnx*sizeof(float));   cudaMalloc(&g_P, nnz*nnx*sizeof(float));     
+    cudaMalloc(&s_P, nnz*nnx*sizeof(float));   cudaMalloc(&g_P, nnz*nnx*sizeof(float));
     cudaMalloc(&s_Q, nnz*nnx*sizeof(float));   cudaMalloc(&g_Q, nnz*nnx*sizeof(float));
 
-    cudaMalloc(&s_px0, nnz*nnx*sizeof(float)); cudaMalloc(&g_px0, nnz*nnx*sizeof(float)); 
+    cudaMalloc(&s_px0, nnz*nnx*sizeof(float)); cudaMalloc(&g_px0, nnz*nnx*sizeof(float));
     cudaMalloc(&s_px1, nnz*nnx*sizeof(float)); cudaMalloc(&g_px1, nnz*nnx*sizeof(float));
-    cudaMalloc(&s_pz0, nnz*nnx*sizeof(float)); cudaMalloc(&g_pz0, nnz*nnx*sizeof(float)); 
+    cudaMalloc(&s_pz0, nnz*nnx*sizeof(float)); cudaMalloc(&g_pz0, nnz*nnx*sizeof(float));
     cudaMalloc(&s_pz1, nnz*nnx*sizeof(float)); cudaMalloc(&g_pz1, nnz*nnx*sizeof(float));
-    cudaMalloc(&s_qx0, nnz*nnx*sizeof(float)); cudaMalloc(&g_qx0, nnz*nnx*sizeof(float));  
+    cudaMalloc(&s_qx0, nnz*nnx*sizeof(float)); cudaMalloc(&g_qx0, nnz*nnx*sizeof(float));
     cudaMalloc(&s_qx1, nnz*nnx*sizeof(float)); cudaMalloc(&g_qx1, nnz*nnx*sizeof(float));
-    cudaMalloc(&s_qz0, nnz*nnx*sizeof(float)); cudaMalloc(&g_qz0, nnz*nnx*sizeof(float));  
+    cudaMalloc(&s_qz0, nnz*nnx*sizeof(float)); cudaMalloc(&g_qz0, nnz*nnx*sizeof(float));
     cudaMalloc(&s_qz1, nnz*nnx*sizeof(float)); cudaMalloc(&g_qz1, nnz*nnx*sizeof(float));
 
     /* boundary absorb coefficient device memory */
-    cudaMalloc(&coffx1, nnx*sizeof(float));    cudaMalloc(&acoffx1, nnx*sizeof(float));    
+    cudaMalloc(&coffx1, nnx*sizeof(float));    cudaMalloc(&acoffx1, nnx*sizeof(float));
     cudaMalloc(&coffx2, nnx*sizeof(float));    cudaMalloc(&acoffx2, nnx*sizeof(float));
-    cudaMalloc(&coffz1, nnz*sizeof(float));    cudaMalloc(&acoffz1, nnz*sizeof(float));    
+    cudaMalloc(&coffz1, nnz*sizeof(float));    cudaMalloc(&acoffz1, nnz*sizeof(float));
     cudaMalloc(&coffz2, nnz*sizeof(float));    cudaMalloc(&acoffz2, nnz*sizeof(float));
 
     /* boundary wavefield device memory */
@@ -1376,7 +1376,7 @@ void RTM(char FNvelocity[],
     cudaMalloc(&shot_Dev, nx*nt*sizeof(float));
 
     /* imaging device memory */
-    cudaMalloc(&migration, nz*nx*sizeof(float)); 
+    cudaMalloc(&migration, nz*nx*sizeof(float));
     cudaMalloc(&illumination, nz*nx*sizeof(float));
     cudaMalloc(&adcigs, nz*nangle*nx*sizeof(float));
 
@@ -1389,36 +1389,36 @@ void RTM(char FNvelocity[],
     initial_coffe<<<(nnz+511)/512, 512>>>(dt,nz,coffz1,coffz2,acoffz1,acoffz2,npml);
 
     /* set Imaging to zero */
-    cudaMemset(migration, 0, nz*nx*sizeof(float)); 
+    cudaMemset(migration, 0, nz*nx*sizeof(float));
     cudaMemset(illumination, 0, nz*nx*sizeof(float));
-    cudaMemset(adcigs, 0, nz*nangle*nx*sizeof(float));  
+    cudaMemset(adcigs, 0, nz*nangle*nx*sizeof(float));
 
     clock_t time;
 
     char msg[1024];
     /* Starting IS loop */
-    for(is=1; is<=ns; is++)	 {  
+    for(is=1; is<=ns; is++)	 {
 
         time = clock();
         sprintf(msg, "IS =%3d/%d ",is,ns);
         print_info(msg);
         mBar(1.0*is/(1.0*ns));
 
-        cudaMemset(s_u0, 0, nnz*nnx*sizeof(float)); cudaMemset(g_u0, 0, nnz*nnx*sizeof(float));     
+        cudaMemset(s_u0, 0, nnz*nnx*sizeof(float)); cudaMemset(g_u0, 0, nnz*nnx*sizeof(float));
         cudaMemset(s_u1, 0, nnz*nnx*sizeof(float)); cudaMemset(g_u1, 0, nnz*nnx*sizeof(float));
-        cudaMemset(s_w0, 0, nnz*nnx*sizeof(float)); cudaMemset(g_w0, 0, nnz*nnx*sizeof(float));     
+        cudaMemset(s_w0, 0, nnz*nnx*sizeof(float)); cudaMemset(g_w0, 0, nnz*nnx*sizeof(float));
         cudaMemset(s_w1, 0, nnz*nnx*sizeof(float)); cudaMemset(g_w1, 0, nnz*nnx*sizeof(float));
 
-        cudaMemset(s_P, 0, nnz*nnx*sizeof(float));  cudaMemset(g_P, 0, nnz*nnx*sizeof(float));      
+        cudaMemset(s_P, 0, nnz*nnx*sizeof(float));  cudaMemset(g_P, 0, nnz*nnx*sizeof(float));
         cudaMemset(s_Q, 0, nnz*nnx*sizeof(float));  cudaMemset(g_Q, 0, nnz*nnx*sizeof(float));
 
-        cudaMemset(s_px0, 0, nnz*nnx*sizeof(float));cudaMemset(g_px0, 0, nnz*nnx*sizeof(float));   
+        cudaMemset(s_px0, 0, nnz*nnx*sizeof(float));cudaMemset(g_px0, 0, nnz*nnx*sizeof(float));
         cudaMemset(s_px1, 0, nnz*nnx*sizeof(float));cudaMemset(g_px1, 0, nnz*nnx*sizeof(float));
-        cudaMemset(s_pz0, 0, nnz*nnx*sizeof(float));cudaMemset(g_pz0, 0, nnz*nnx*sizeof(float));    
+        cudaMemset(s_pz0, 0, nnz*nnx*sizeof(float));cudaMemset(g_pz0, 0, nnz*nnx*sizeof(float));
         cudaMemset(s_pz1, 0, nnz*nnx*sizeof(float));cudaMemset(g_pz1, 0, nnz*nnx*sizeof(float));
-        cudaMemset(s_qx0, 0, nnz*nnx*sizeof(float));cudaMemset(g_qx0, 0, nnz*nnx*sizeof(float));    
+        cudaMemset(s_qx0, 0, nnz*nnx*sizeof(float));cudaMemset(g_qx0, 0, nnz*nnx*sizeof(float));
         cudaMemset(s_qx1, 0, nnz*nnx*sizeof(float));cudaMemset(g_qx1, 0, nnz*nnx*sizeof(float));
-        cudaMemset(s_qz0, 0, nnz*nnx*sizeof(float));cudaMemset(g_qz0, 0, nnz*nnx*sizeof(float));    
+        cudaMemset(s_qz0, 0, nnz*nnx*sizeof(float));cudaMemset(g_qz0, 0, nnz*nnx*sizeof(float));
         cudaMemset(s_qz1, 0, nnz*nnx*sizeof(float));cudaMemset(g_qz1, 0, nnz*nnx*sizeof(float));
 
         cudaMemset(shot_Dev, 0, nt*nx*sizeof(float));
@@ -1426,7 +1426,7 @@ void RTM(char FNvelocity[],
         cudaMemset(Q_bndr, 0, nt*(2*nx+2*nz)*sizeof(float));
 
         /* forward */
-        for(it=0,t=dt; it<nt; it++,t+=dt) { 
+        for(it=0,t=dt; it<nt; it++,t+=dt) {
 
             add_source<<<1,1>>>(pfac, fs,zs,nx,nz,nnx,nnz,dt,t,favg,wtype,npml,is,ds,s_P,s_Q);
             update_vel<<<(nnx*nnz+511)/512, 512>>>
@@ -1436,9 +1436,9 @@ void RTM(char FNvelocity[],
                           (nx,nz,nnx,nnz,dt,dx,dz,s_u1,s_w1,s_P,s_Q,vp,npml,
                            s_px1,s_px0,s_pz1,s_pz0,s_qx1,s_qx0,s_qz1,s_qz0,
                            acoffx1,acoffx2,acoffz1,acoffz2,delta,epsilon,fs,ds,zs,is,true);
-            s_u0 = s_u1;   s_w0 = s_w1; 
-            s_px0 = s_px1; s_pz0 = s_pz1; 
-            s_qx0 = s_qx1; s_qz0 = s_qz1; 
+            s_u0 = s_u1;   s_w0 = s_w1;
+            s_px0 = s_px1; s_pz0 = s_pz1;
+            s_qx0 = s_qx1; s_qz0 = s_qz1;
 
             shot_record<<<(nx+511)/512, 512>>>
                         (nnx, nnz, nx, nz, npml, it, nt, s_P, shot_Dev, true);
@@ -1471,7 +1471,7 @@ void RTM(char FNvelocity[],
         }
 
         /* backward */
-        for(it=nt-1; it>=0; it--) { 
+        for(it=nt-1; it>=0; it--) {
 
             /* source wavefield */
             wavefield_bndr<<<((2*nx+2*nz)+511)/512,512>>>
@@ -1483,10 +1483,10 @@ void RTM(char FNvelocity[],
                             (nx,nz,nnx,nnz,dt,dx,dz,s_u1,s_w1,s_P,s_Q,vp,npml,
                              s_px1,s_px0,s_pz1,s_pz0,s_qx1,s_qx0,s_qz1,s_qz0,
                              acoffx1,acoffx2,acoffz1,acoffz2,delta,epsilon,fs,ds,zs,is,false);
-            s_u0=s_u1;   s_w0=s_w1; 
-            s_px0=s_px1; s_pz0=s_pz1; 
+            s_u0=s_u1;   s_w0=s_w1;
+            s_px0=s_px1; s_pz0=s_pz1;
             s_qx0=s_qx1; s_qz0=s_qz1;
- 
+
             if(writeSnap && (it%300==0)) {
                 cudaMemcpy(e, s_P, nnz*nnx*sizeof(float), cudaMemcpyDeviceToHost);
                 for(int i=npml;i<nnx-npml;i++)
@@ -1509,9 +1509,9 @@ void RTM(char FNvelocity[],
                              g_px1,g_px0,g_pz1,g_pz0,g_qx1,g_qx0,g_qz1,g_qz0,
                              acoffx1,acoffx2,acoffz1,acoffz2,
                              delta,epsilon,fs,ds,zs,is,false);
-            g_u0=g_u1;   g_w0=g_w1; 
-            g_px0=g_px1; g_pz0=g_pz1; 
-            g_qx0=g_qx1; g_qz0=g_qz1; 
+            g_u0=g_u1;   g_w0=g_w1;
+            g_px0=g_px1; g_pz0=g_pz1;
+            g_qx0=g_qx1; g_qz0=g_qz1;
 
             if(writeSnap && (it%300==0)) {
                 cudaMemcpy(e, g_P, nnz*nnx*sizeof(float), cudaMemcpyDeviceToHost);
@@ -1524,7 +1524,7 @@ void RTM(char FNvelocity[],
                             (nnx, nnz, nz, npml, migration, s_P, g_P);
 
             Poynting_Adcigs<<<(nx*nz+511)/512, 512>>>
-                            (nnz, nx, nz, npml, nangle, dangle, adcigs, 
+                            (nnz, nx, nz, npml, nangle, dangle, adcigs,
                              s_P, s_Q, s_u0, s_w0, g_P, g_Q, g_u0, g_w0);
 
         }//it
@@ -1532,7 +1532,7 @@ void RTM(char FNvelocity[],
         time = clock() - time;
         printf(", %f min\n", ((float)time)/60.0/CLOCKS_PER_SEC);
 
-    }//is 
+    }//is
 
     migration_illum<<<(nx*nz+511)/512, 512>>>(nx, nz, npml, migration, illumination);
 
@@ -1562,56 +1562,56 @@ void RTM(char FNvelocity[],
 
     /* file close */
     if(writeSnap)
-        fclose(fpSnap);  
-    if(readShot) 
-        fclose(fpObsShot);  
+        fclose(fpSnap);
+    if(readShot)
+        fclose(fpObsShot);
     else
         fclose(fpCalShot);
     fclose(fpMigration);
-    fclose(fpIllunmination);  
+    fclose(fpIllunmination);
     fclose(fpAdcigs);
     fclose(fpStkAdcigs);
     fclose(fpIntervalAdcigs);
 
     /* device memory free */
-    cudaFree(coffx1);    cudaFree(acoffx1);       
+    cudaFree(coffx1);    cudaFree(acoffx1);
     cudaFree(coffx2);    cudaFree(acoffx2);
-    cudaFree(coffz1);    cudaFree(acoffz1);  
+    cudaFree(coffz1);    cudaFree(acoffz1);
     cudaFree(coffz2);    cudaFree(acoffz2);
 
-    cudaFree(s_u0);    cudaFree(s_u1);           
-    cudaFree(s_w0);    cudaFree(s_w1);           
+    cudaFree(s_u0);    cudaFree(s_u1);
+    cudaFree(s_w0);    cudaFree(s_w1);
 
-    cudaFree(s_P);    cudaFree(s_Q);            
+    cudaFree(s_P);    cudaFree(s_Q);
 
-    cudaFree(s_px0);    cudaFree(s_px1);          
-    cudaFree(s_pz0);    cudaFree(s_pz1);          
-    cudaFree(s_qx0);    cudaFree(s_qx1);          
-    cudaFree(s_qz0);    cudaFree(s_qz1);          
+    cudaFree(s_px0);    cudaFree(s_px1);
+    cudaFree(s_pz0);    cudaFree(s_pz1);
+    cudaFree(s_qx0);    cudaFree(s_qx1);
+    cudaFree(s_qz0);    cudaFree(s_qz1);
 
-    cudaFree(g_u0);    cudaFree(g_u1);           
-    cudaFree(g_w0);    cudaFree(g_w1);           
+    cudaFree(g_u0);    cudaFree(g_u1);
+    cudaFree(g_w0);    cudaFree(g_w1);
 
-    cudaFree(g_P);    cudaFree(g_Q);            
+    cudaFree(g_P);    cudaFree(g_Q);
 
-    cudaFree(g_px0);    cudaFree(g_px1);          
-    cudaFree(g_pz0);    cudaFree(g_pz1);          
-    cudaFree(g_qx0);    cudaFree(g_qx1);          
-    cudaFree(g_qz0);    cudaFree(g_qz1);          
+    cudaFree(g_px0);    cudaFree(g_px1);
+    cudaFree(g_pz0);    cudaFree(g_pz1);
+    cudaFree(g_qx0);    cudaFree(g_qx1);
+    cudaFree(g_qz0);    cudaFree(g_qz1);
 
     cudaFree(shot_Dev);
 
-    cudaFree(P_bndr);    cudaFree(Q_bndr);        
+    cudaFree(P_bndr);    cudaFree(Q_bndr);
 
-    cudaFree(migration); 
+    cudaFree(migration);
     cudaFree(illumination);
     cudaFree(adcigs);
 
     /* host memory free */
-    free(v);	
-    free(e);	
+    free(v);
+    free(e);
     free(d);
-    free(shot_Hos);    
+    free(shot_Hos);
     free(Atemp);
 
     print_success("Finish Reverse Time Migration!\n");
@@ -1630,7 +1630,7 @@ int main(int argc,char *argv[])
                      \n./a.out kind=1 for FD,  \
                      \n./a.out kind=2 for RTM  \
                      \n")
-    
+
 
     /* this "if" for arguments line: ./a.out 1 */
     int kind;
@@ -1664,7 +1664,7 @@ int main(int argc,char *argv[])
             sprintf(msg, "Let %s kind=1 for FD. =2 for RTM.\n",argv[0]);
             print_error(msg);
             exit(0);
-        
+
         }else {
 
             sprintf(msg, "The %s Starting...\n", argv[0]);
@@ -1682,9 +1682,9 @@ int main(int argc,char *argv[])
 
     /* file */
     /* these for FD */
-    char FNvelocity[90]       = {"waxian_vel_201201201.dat"};      
+    char FNvelocity[90]       = {"waxian_vel_201201201.dat"};
     char FNepsilon[90]        = {"waxian_eps_201201201.dat"};
-    char FNdelta[90]          = {"waxian_del_201201201.dat"}; 
+    char FNdelta[90]          = {"waxian_del_201201201.dat"};
     char FNCalShot[90]        = {"shot.dat"};//shot cal
     char FNSnap[90]           = {"snap.dat"};//snap
     char FNIllumination[90]   = {"illumination.dat"};
@@ -1693,99 +1693,99 @@ int main(int argc,char *argv[])
     char FNObsShot[90]        = {"shot_obs.dat"};//shot obs
 
     char FNMigration[90]      = {"migration.dat"};
-    char FNAdcigs[90]         = {"adcigs.dat"}; 
+    char FNAdcigs[90]         = {"adcigs.dat"};
     char FNStkAdcigs[90]      = {"stkadcigs.dat"};
-    char FNIntervalAdcigs[90] = {"smiled_adcigs.dat"}; 
+    char FNIntervalAdcigs[90] = {"smiled_adcigs.dat"};
 
-    
+
     wtype=1;/* wavelet: 1,2,3 */
     npml=20;/* pml boundary */
 
-    readShot = false;/* true: read shot; 
+    readShot = false;/* true: read shot;
                        flase: use right shot record */
-    writeSnap = false;/* true: write; 
+    writeSnap = false;/* true: write;
                         flase: no write snap */
 
-    nx = 201;              
+    nx = 201;
     nz = 201;         favg=35;     pfac=1000.0;
 
-    dx=10.0;   
-    dz=10.0;   
-     
-    nt=2001;    
-    dt=0.001;
-     
-    ns=5;       
-    fs=nx/ns/2;      
-    ds=nx/ns;
-    zs=1;   
+    dx=10.0;
+    dz=10.0;
 
-    nangle=70; 
-    dangle=1;  
+    nt=2001;
+    dt=0.001;
+
+    ns=5;
+    fs=nx/ns/2;
+    ds=nx/ns;
+    zs=1;
+
+    nangle=70;
+    dangle=1;
     dAdcigs=25;
 
 
- 
-    start = clock(); 
+
+    start = clock();
 
 
     if(kind == 1){
         /* FD */
         print_info("FD starting...\n");
-        FD( FNvelocity,  
-            FNepsilon,  
-            FNdelta, 
-            FNCalShot, 
-            FNSnap, 
-            FNIllumination, 
-            wtype, 
-            npml, 
-            nx, 
-            nz, 
-            dx, 
-            dz, 
-            nt, 
-            dt, 
-            ns, 
-            fs, 
-            ds, 
-            zs, 
-            favg, 
-            pfac, 
+        FD( FNvelocity,
+            FNepsilon,
+            FNdelta,
+            FNCalShot,
+            FNSnap,
+            FNIllumination,
+            wtype,
+            npml,
+            nx,
+            nz,
+            dx,
+            dz,
+            nt,
+            dt,
+            ns,
+            fs,
+            ds,
+            zs,
+            favg,
+            pfac,
             writeSnap);
 
     }else if(kind == 2){
         /* RTM */
         print_info("RTM starting...\n");
-        RTM(FNvelocity,  
-            FNepsilon,  
-            FNdelta, 
-            FNObsShot,  
-            FNCalShot, 
-            FNSnap, 
-            FNMigration, 
-            FNIllumination, 
-            FNAdcigs, 
-            FNStkAdcigs, 
+        RTM(FNvelocity,
+            FNepsilon,
+            FNdelta,
+            FNObsShot,
+            FNCalShot,
+            FNSnap,
+            FNMigration,
+            FNIllumination,
+            FNAdcigs,
+            FNStkAdcigs,
             FNIntervalAdcigs,
-            wtype, 
-            npml, 
-            nx, 
-            nz, 
-            dx, 
-            dz, 
-            nt, 
-            dt, 
-            ns, 
-            fs, 
-            ds, 
-            zs, 
-            favg, 
-            pfac, 
-            nangle, 
-            dangle, 
-            dAdcigs, 
-            readShot, 
+            wtype,
+            npml,
+            nx,
+            nz,
+            dx,
+            dz,
+            nt,
+            dt,
+            ns,
+            fs,
+            ds,
+            zs,
+            favg,
+            pfac,
+            nangle,
+            dangle,
+            dAdcigs,
+            readShot,
             writeSnap);
 
     } else { }
@@ -1793,9 +1793,9 @@ int main(int argc,char *argv[])
 
     end = clock();
 
-    sprintf(msg, "The %s Finished... \n", argv[0]); 
+    sprintf(msg, "The %s Finished... \n", argv[0]);
     print_info(msg);
-   
+
     sprintf(msg, "Total %d shots: %f (min)\n", ns, ((float)(end-start))/60.0/CLOCKS_PER_SEC);
     print_info(msg);
     print_success("Done！ File in:\n");

@@ -1,25 +1,25 @@
 //a#########################################################
-//a##         3D Acoustic VTI Medium Forward 
-//a##    
-//a##  Ps :GPU(CUDA)  
+//a##         3D Acoustic VTI Medium Forward
+//a##
+//a##  Ps :GPU(CUDA)
 //a##	Copyright (C) Rong Tao, all rights reserved
 //a##/*a***************************
 //a##Function for VTI medium modeling,
 //a##
 //a## Ps:  the function of modeling following:
-//a##      
-//a##          du/dt=1/rho*dp/dx , 
-//a##          dv/dt=1/rho*dp/dy , 
-//a##          dw/dt=1/rho*dq/dz ,  
+//a##
+//a##          du/dt=1/rho*dp/dx ,
+//a##          dv/dt=1/rho*dp/dy ,
+//a##          dw/dt=1/rho*dq/dz ,
 //a##          dp/dt=rho*vpx^2*(du/dx+dv/dy)+rho*vp*vpn*dw/dz ,
 //a##          dq/dt=rho*vp*vpn*(du/dx+dv/dy)+rho*vp^2*dw/dz ,
 //a##                     vpx^2=vp^2*(1+2*epsilon);
 //a##                     vpn^2=vp^2*(1+2*delta);
-//a##  
+//a##
 //a##*********a*******************/
 //a##
-//a##                                  code by Rong Tao 
-//a##                            
+//a##                                  code by Rong Tao
+//a##
 //a#########################################################
 #include <stdio.h>
 #include <malloc.h>
@@ -40,13 +40,13 @@ __device__ float d0;
 __constant__ float c[mm]={1.196289,-0.0797526,0.009570313,-0.0006975447};
 
 //a################################################################################
-void check_gpu_error (const char *msg) 
+void check_gpu_error (const char *msg)
 /*< check GPU errors >*/
 {
     cudaError_t err = cudaGetLastError ();
-    if (cudaSuccess != err) { 
-	printf("Cuda error: %s: %s\n", msg, cudaGetErrorString (err)); 
-	exit(0);   
+    if (cudaSuccess != err) {
+	printf("Cuda error: %s: %s\n", msg, cudaGetErrorString (err));
+	exit(0);
     }
 }
 //a################################################################################
@@ -55,8 +55,8 @@ __global__ void add_source(float pfac,int fsx,int fsy,int sz,int nx,int ny,int n
 /*< generate ricker wavelet with time deley >*/
 {
        int ixs,iys,izs;
-       float x_,xx_,tdelay,ts,source=0.0,sx,sy; 
-  
+       float x_,xx_,tdelay,ts,source=0.0,sx,sy;
+
        tdelay=1.0/favg;
        ts=t-tdelay;
 
@@ -77,7 +77,7 @@ __global__ void add_source(float pfac,int fsx,int fsy,int sz,int nx,int ny,int n
         }
 
        if(t<=2*tdelay)
-       {         
+       {
 	     ixs = sx+npml-1;
 	     iys = sy+npml-1;
             izs = sz+npml-1;
@@ -121,7 +121,7 @@ __global__ void update_vel(int nx,int ny,int nz,int nnx,int nny,int nnz,int npml
                      w1[id]=coffz2[iz]*w0[id]-coffz1[iz]*dtz*zz;
                    }
                  }
-        }  
+        }
 
 
 
@@ -161,7 +161,7 @@ __global__ void update_stress(int nx,int ny,int nz,int nnx,int nny,int nnz,float
                                dd = 0.0;
                            }else{
                                ee = 0.5*(1-cos(pi*((sqrtf(rx*rx+ry*ry+rz*rz)-r)*4.0/(R*3.0-1))))*epsilon[id];
-                               dd = 0.5*(1-cos(pi*((sqrtf(rx*rx+ry*ry+rz*rz)-r)*4.0/(R*3.0-1))))*delta[id]; 
+                               dd = 0.5*(1-cos(pi*((sqrtf(rx*rx+ry*ry+rz*rz)-r)*4.0/(R*3.0-1))))*delta[id];
                               }
                        }else{
                           ee=epsilon[id];
@@ -197,7 +197,7 @@ __global__ void update_stress(int nx,int ny,int nz,int nnx,int nny,int nnz,float
                    }
                  }
          }
-}                      
+}
 /********************func**********************/
 __global__ void get_d0(float dx,float dy,float dz,int nnx,int nny,int nnz,int npml,float *vp)
 {
@@ -207,7 +207,7 @@ __global__ void get_d0(float dx,float dy,float dz,int nnx,int nny,int nnz,int np
 void pad_vv(int nx,int ny,int nz,int nnx,int nny,int nnz,int npml,float *ee)
 {
      int ix,iy,iz,id;
- 
+
 	    for(iy=0;iy<nny;iy++)
 		 for(ix=0;ix<nnx;ix++)
 		 {
@@ -256,7 +256,7 @@ void pad_vv(int nx,int ny,int nz,int nnx,int nny,int nnz,int npml,float *ee)
 void read_file(char FN1[],char FN2[],char FN3[],int nx,int ny,int nz,int nnx,int nny,int nnz,float *vv,float *epsilon,float *delta,int npml)
 {
 		 int ix,iy,iz,id;
-		
+
 		 FILE *fp1,*fp2,*fp3;
 		 if((fp1=fopen(FN1,"rb"))==NULL)printf("error open <%s>!\n",FN1);
 		 if((fp2=fopen(FN2,"rb"))==NULL)printf("error open <%s>!\n",FN2);
@@ -279,13 +279,13 @@ void read_file(char FN1[],char FN2[],char FN3[],int nx,int ny,int nz,int nnx,int
 }
 /*************func*******************/
 __global__ void initial_coffe(float dt,int nn,float *coff1,float *coff2,float *acoff1,float *acoff2,int npml)
-{		
+{
 	 int id=threadIdx.x+blockDim.x*blockIdx.x;
 
            if(id<nn+2*npml)
             {
 		 if(id<npml)
-		 {   
+		 {
 			 coff1[id]=1.0/(1.0+(dt*d0*pow((npml-0.5-id)/npml,2.0))/2.0);
 			 coff2[id]=coff1[id]*(1.0-(dt*d0*pow((npml-0.5-id)/npml,2.0))/2.0);
 
@@ -307,12 +307,12 @@ __global__ void initial_coffe(float dt,int nn,float *coff1,float *coff2,float *a
 
 			 acoff1[id]=1.0/(1.0+(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
 			 acoff2[id]=acoff1[id]*(1.0-(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
-		 }	
-            }       
+		 }
+            }
 }
 /*************func*******************/
 __global__ void shot_record(int nnx,int nny, int nnz, int nx,int ny, int nz, int npml, int it, int nt, float *P, float *shot)
-{		
+{
 	 int id=threadIdx.x+blockDim.x*blockIdx.x;
 
         int ix=id%nx;
@@ -321,15 +321,15 @@ __global__ void shot_record(int nnx,int nny, int nnz, int nx,int ny, int nz, int
            if(id<nx*ny)
             {
                shot[it+nt*ix+nt*nx*iy]=P[npml+nnz*(ix+npml)+nnz*nnx*(iy+npml)];
-            }       
+            }
 }
 
-/*************func**************/ 
+/*************func**************/
 void window3d(float *a, float *b, int nz, int nx, int ny, int nnz, int nnx, int npml)
 /*< window a 3d subvolume >*/
 {
 	int iz, ix, iy;
-	
+
 	for(iy=0; iy<ny; iy++)
 	for(ix=0; ix<nx; ix++)
 	for(iz=0; iz<nz; iz++)
@@ -337,7 +337,7 @@ void window3d(float *a, float *b, int nz, int nx, int ny, int nnz, int nnx, int 
 		a[iz+nz*ix+nz*nx*iy]=b[(iz+npml)+nnz*(ix+npml)+nnz*nnx*(iy+npml)];
 	}
 }
-/*************func**************/    
+/*************func**************/
 __global__ void mute_directwave(int nx,int ny,int nt,float dt,float favg, float dx,float dy,float dz,int fsx,int fsy,int dsx,int dsy,
                                 int zs,int is, float *vp,float *epsilon,float *shot,int tt,int nsx)
 {
@@ -414,32 +414,32 @@ int main(int argc,char *argv[])
 	   char FN4[250]={"waxian_shot_1501_iso_mute.dat"};
 	   char FN5[250]={"waxian_snap.dat"};
 
-/********aaa************/  
+/********aaa************/
 	 FILE *fpsnap, *fpshot;
         fpshot=fopen(FN4,"wb");
         fpsnap=fopen(FN5,"wb");
 
- 
+
 /********* parameters *************/
 
-          nx=301; 
-          ny=301;              
+          nx=301;
+          ny=301;
 	   nz=201;         favg=30;     pfac=10.0;
 
- 	   dx=10.0;  
- 	   dy=10.0;   
-        dz=10.0;   
-     
-          nt=1501;    
+ 	   dx=10.0;
+ 	   dy=10.0;
+        dz=10.0;
+
+          nt=1501;
           dt=0.001;
-     
-          ns=1;          nsx=1;  
-          fsx=nx/nsx/2;    
-          dsx=nx/nsx;         
-          fsy=ny/(ns/nsx)/2;   
+
+          ns=1;          nsx=1;
+          fsx=nx/nsx/2;
+          dsx=nx/nsx;
+          fsy=ny/(ns/nsx)/2;
           dsy=ny/(ns/nsx);
-          zs=1;     
-/*************v***************/ 
+          zs=1;
+/*************v***************/
           nnx=nx+2*npml;
           nny=ny+2*npml;
           nnz=nz+2*npml;
@@ -506,11 +506,11 @@ int main(int argc,char *argv[])
 
 
         printf("--------------------------------------------------------\n");
-        printf("---   \n");   
-        start = clock();                                  
+        printf("---   \n");
+        start = clock();
 /**********IS Loop start*******/
-   for(is=0;is<ns;is++)	
-    {     
+   for(is=0;is<ns;is++)
+    {
        //  printf("---   IS=%3d  \n",is);
 
      cudaMemset(s_u0, 0, nnz*nnx*nny*sizeof(float));     cudaMemset(s_u1, 0, nnz*nnx*nny*sizeof(float));
@@ -529,16 +529,16 @@ int main(int argc,char *argv[])
      cudaMemset(shot_Dev, 0, nt*nx*ny*sizeof(float));
 
      for(it=0,t=dt;it<nt;it++,t+=dt)
-     { 
+     {
       if(it%100==0)printf("---   IS===%d   it===%d\n",is,it);
         add_source<<<1,1>>>(pfac,fsx,fsy,zs,nx,ny,nz,nnx,nny,nnz,dt,t,favg,wtype,npml,is,dsx,dsy,s_P,s_Q,nsx);
         update_vel<<<dimg,dimb>>>(nx,ny,nz,nnx,nny,nnz,npml,dt,dx,dy,dz,
                                  s_u0,s_v0,s_w0,s_u1,s_v1,s_w1,s_P,s_Q,coffx1,coffx2,coffy1,coffy2,coffz1,coffz2);
         update_stress<<<dimg,dimb>>>(nx,ny,nz,nnx,nny,nnz,dt,dx,dy,dz,s_u1,s_v1,s_w1,s_P,s_Q,vp,npml,
                                      s_px1,s_px0,s_py1,s_py0,s_pz1,s_pz0,s_qx1,s_qx0,s_qy1,s_qy0,s_qz1,s_qz0,
-                                     acoffx1,acoffx2,acoffy1,acoffy2,acoffz1,acoffz2,delta,epsilon, 
+                                     acoffx1,acoffx2,acoffy1,acoffy2,acoffz1,acoffz2,delta,epsilon,
                                      fsx, dsx, fsy, dsy,zs, is, nsx, true);
-        s_u0=s_u1; s_v0=s_v1; s_w0=s_w1; s_px0=s_px1; s_py0=s_py1; s_pz0=s_pz1; s_qx0=s_qx1; s_qy0=s_qy1; s_qz0=s_qz1; 
+        s_u0=s_u1; s_v0=s_v1; s_w0=s_w1; s_px0=s_px1; s_py0=s_py1; s_pz0=s_pz1; s_qx0=s_qx1; s_qy0=s_qy1; s_qz0=s_qz1;
 
         shot_record<<<(nx*ny+511)/512, 512>>>(nnx,nny, nnz, nx,ny, nz, npml, it, nt, s_P, shot_Dev);
 
@@ -558,16 +558,16 @@ int main(int argc,char *argv[])
 
     }//is loop end
     end = clock();
-/*********IS Loop end*********/ 		     
-   printf("---   The forward is over    \n"); 
-   printf("---   Complete!!!!!!!!! \n");  
+/*********IS Loop end*********/
+   printf("---   The forward is over    \n");
+   printf("---   Complete!!!!!!!!! \n");
    printf("total %d shots: %f (s)\n", ns, ((float)(end-start))/CLOCKS_PER_SEC);
 
 
 
-/***********close************/ 
+/***********close************/
           fclose(fpsnap);   fclose(fpshot);
-/***********free*************/ 
+/***********free*************/
        cudaFree(coffx1);       cudaFree(coffx2);
        cudaFree(coffz1);       cudaFree(coffz2);
        cudaFree(acoffx1);      cudaFree(acoffx2);

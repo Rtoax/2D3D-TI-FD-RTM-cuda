@@ -1,25 +1,25 @@
 //a#########################################################
-//a##         3D Acoustic VTI Medium RTM 
-//a##    
+//a##         3D Acoustic VTI Medium RTM
+//a##
 //a##  Ps :GPU(CUDA)  ,-SV    ,3D laplace filter
 //a##
 //a##/*a***************************
 //a##Function for VTI medium modeling,
 //a##
 //a## Ps:  the function of modeling following:
-//a##      
-//a##          du/dt=1/rho*dp/dx , 
-//a##          dv/dt=1/rho*dp/dy , 
-//a##          dw/dt=1/rho*dq/dz ,  
+//a##
+//a##          du/dt=1/rho*dp/dx ,
+//a##          dv/dt=1/rho*dp/dy ,
+//a##          dw/dt=1/rho*dq/dz ,
 //a##          dp/dt=rho*vpx^2*(du/dx+dv/dy)+rho*vp*vpn*dw/dz ,
 //a##          dq/dt=rho*vp*vpn*(du/dx+dv/dy)+rho*vp^2*dw/dz ,
 //a##                     vpx^2=vp^2*(1+2*epsilu);
 //a##                     vpn^2=vp^2*(1+2*deta);
-//a##  
+//a##
 //a##*********a*******************/
 //a##	Copyright (C) Rong Tao, all rights reserved
-//a##                                   code by Rong Tao 
-//a##                            
+//a##                                   code by Rong Tao
+//a##
 //a#########################################################
 #include <stdio.h>
 #include <malloc.h>
@@ -40,13 +40,13 @@ __device__ float d0;
 __constant__ float c[mm]={1.196289,-0.0797526,0.009570313,-0.0006975447};
 
 //a################################################################################
-void check_gpu_error (const char *msg) 
+void check_gpu_error (const char *msg)
 /*< check GPU errors >*/
 {
     cudaError_t err = cudaGetLastError ();
-    if (cudaSuccess != err) { 
-	printf("Cuda error: %s: %s\n", msg, cudaGetErrorString (err)); 
-	exit(0);   
+    if (cudaSuccess != err) {
+	printf("Cuda error: %s: %s\n", msg, cudaGetErrorString (err));
+	exit(0);
     }
 }
 //a################################################################################
@@ -55,8 +55,8 @@ __global__ void add_source(float pfac,int fsx,int fsy,int sz,int nx,int ny,int n
 /*< generate ricker wavelet with time deley >*/
 {
        int ixs,iys,izs;
-       float x_,xx_,tdelay,ts,source=0.0,sx,sy; 
-  
+       float x_,xx_,tdelay,ts,source=0.0,sx,sy;
+
        tdelay=1.0/favg;
        ts=t-tdelay;
 
@@ -80,7 +80,7 @@ __global__ void add_source(float pfac,int fsx,int fsy,int sz,int nx,int ny,int n
         }
 
        if(t<=2*tdelay)
-       {         
+       {
 	     ixs = sx+npml-1;
 	     iys = sy+npml-1;
             izs = sz+npml-1;
@@ -124,7 +124,7 @@ __global__ void update_vel(int nx,int ny,int nz,int nnx,int nny,int nnz,int npml
                      w1[id]=coffz2[iz]*w0[id]-coffz1[iz]*dtz*zz;
                    }
                  }
-        }  
+        }
 
 
 
@@ -166,7 +166,7 @@ __global__ void update_stress(int nx,int ny,int nz,int nnx,int nny,int nnz,float
                                dd = 0.0;
                            }else{
                                ee = 0.5*(1-cos(pi*((sqrtf(rx*rx+ry*ry+rz*rz)-r)*4.0/(R*3.0-1))))*epsilu[id];
-                               dd = 0.5*(1-cos(pi*((sqrtf(rx*rx+ry*ry+rz*rz)-r)*4.0/(R*3.0-1))))*deta[id]; 
+                               dd = 0.5*(1-cos(pi*((sqrtf(rx*rx+ry*ry+rz*rz)-r)*4.0/(R*3.0-1))))*deta[id];
                               }
                        }else{
                           ee=epsilu[id];
@@ -202,7 +202,7 @@ __global__ void update_stress(int nx,int ny,int nz,int nnx,int nny,int nnz,float
                    }
                  }
          }
-}                      
+}
 /********************func**********************/
 __global__ void get_d0(float dx,float dy,float dz,int nnx,int nny,int nnz,int npml,float *vp)
 {
@@ -212,7 +212,7 @@ __global__ void get_d0(float dx,float dy,float dz,int nnx,int nny,int nnz,int np
 void pad_vv(int nx,int ny,int nz,int nnx,int nny,int nnz,int npml,float *ee)
 {
      int ix,iy,iz,id;
- 
+
 	    for(iy=0;iy<nny;iy++)
 		 for(ix=0;ix<nnx;ix++)
 		 {
@@ -261,7 +261,7 @@ void pad_vv(int nx,int ny,int nz,int nnx,int nny,int nnz,int npml,float *ee)
 void read_file(char FN1[],char FN2[],char FN3[],int nx,int ny,int nz,int nnx,int nny,int nnz,float *vv,float *epsilu,float *deta,int npml)
 {
 		 int ix,iy,iz,id;
-		
+
 		 FILE *fp1,*fp2,*fp3;
 		 if((fp1=fopen(FN1,"rb"))==NULL){printf("error open <%s>!\n",FN1);exit(0);}
 		 if((fp2=fopen(FN2,"rb"))==NULL){printf("error open <%s>!\n",FN2);exit(0);}
@@ -284,13 +284,13 @@ void read_file(char FN1[],char FN2[],char FN3[],int nx,int ny,int nz,int nnx,int
 }
 /*************func*******************/
 __global__ void initial_coffe(float dt,int nn,float *coff1,float *coff2,float *acoff1,float *acoff2,int npml)
-{		
+{
 	 int id=threadIdx.x+blockDim.x*blockIdx.x;
 
            if(id<nn+2*npml)
             {
 		 if(id<npml)
-		 {   
+		 {
 			 coff1[id]=1.0/(1.0+(dt*d0*pow((npml-0.5-id)/npml,2.0))/2.0);
 			 coff2[id]=coff1[id]*(1.0-(dt*d0*pow((npml-0.5-id)/npml,2.0))/2.0);
 
@@ -312,13 +312,13 @@ __global__ void initial_coffe(float dt,int nn,float *coff1,float *coff2,float *a
 
 			 acoff1[id]=1.0/(1.0+(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
 			 acoff2[id]=acoff1[id]*(1.0-(dt*d0*pow(((id-nn-npml)*1.0)/npml,2.0))/2.0);
-		 }	
-            }       
+		 }
+            }
 }
 /*************func*******************/
 __global__ void shot_record(int nnx,int nny, int nnz, int nx,int ny, int nz, int npml, int it, int nt,
                             float *P, float *Q, float *shot, bool flag)
-{		
+{
 	 int id=threadIdx.x+blockDim.x*blockIdx.x;
 
         int ix=id%nx;
@@ -334,15 +334,15 @@ __global__ void shot_record(int nnx,int nny, int nnz, int nx,int ny, int nz, int
                  P[npml-1+nnz*(ix+npml)+nnz*nnx*(iy+npml)]=shot[it+nt*ix+nt*nx*iy];
                  Q[npml-1+nnz*(ix+npml)+nnz*nnx*(iy+npml)]=shot[it+nt*ix+nt*nx*iy];
                 }
-            }       
+            }
 }
 
-/*************func**************/ 
+/*************func**************/
 void window3d(float *a, float *b, int nz, int nx, int ny, int nnz, int nnx, int npml)
 /*< window a 3d subvolume >*/
 {
 	int iz, ix, iy;
-	
+
 	for(iy=0; iy<ny; iy++)
 	for(ix=0; ix<nx; ix++)
 	for(iz=0; iz<nz; iz++)
@@ -350,7 +350,7 @@ void window3d(float *a, float *b, int nz, int nx, int ny, int nnz, int nnx, int 
 		a[iz+nz*ix+nz*nx*iy]=b[(iz+npml)+nnz*(ix+npml)+nnz*nnx*(iy+npml)];
 	}
 }
-/*************func**************/    
+/*************func**************/
 __global__ void mute_directwave(int nx,int ny,int nt,float dt,float favg, float dx,float dy,float dz,int fsx,int fsy,int dsx,int dsy,
                                 int zs,int is, float *vp,float *epsilu,float *shot,int tt,int nsx)
 {
@@ -403,9 +403,9 @@ __global__ void mute_directwave(int nx,int ny,int nt,float dt,float favg, float 
    }  */
 }
 /*************func*******************/
-__global__ void wavefield_bndr(int nnx, int nny, int nnz, int nx, int ny, int nz, int npml, int it, int nt, 
+__global__ void wavefield_bndr(int nnx, int nny, int nnz, int nx, int ny, int nz, int npml, int it, int nt,
                                float *P, float *Q, float *P_bndr, float *Q_bndr, bool flag)
-{		
+{
 	 int id=threadIdx.x+blockDim.x*blockIdx.x;
         int ix,iy,iz;
 
@@ -503,9 +503,9 @@ __global__ void wavefield_bndr(int nnx, int nny, int nnz, int nx, int ny, int nz
 
                 }
              }
-            }       
+            }
 }
-/*************func**************/    
+/*************func**************/
 __global__ void cal_migration(int nnx, int nny, int nnz,int nx, int ny, int nz, int npml, float *migration, float *s, float *g)
 {
     const int iz = blockIdx.x * blockDim.x + threadIdx.x;//0--nz's thread:iz
@@ -520,7 +520,7 @@ __global__ void cal_migration(int nnx, int nny, int nnz,int nx, int ny, int nz, 
               migration[id]+=s[iz+npml+nnz*(ix+npml)+nnx*nnz*(iy+npml)]*g[iz+npml+nnz*(ix+npml)+nnx*nnz*(iy+npml)];
         }
 }
-/*************func**************/    
+/*************func**************/
 __global__ void cal_illumination(int nnx, int nny, int nnz,int nx, int ny, int nz, int npml, float *illumination, float *P, float *Q)
 {
     const int iz = blockIdx.x * blockDim.x + threadIdx.x;//0--nz's thread:iz
@@ -536,7 +536,7 @@ __global__ void cal_illumination(int nnx, int nny, int nnz,int nx, int ny, int n
                                +Q[iz+npml+nnz*(ix+npml)+nnx*nnz*(iy+npml)]*Q[iz+npml+nnz*(ix+npml)+nnx*nnz*(iy+npml)];
         }
 }
-/*************func**************/    
+/*************func**************/
 __global__ void migration_illum(int nnx, int nny, int nnz,int nx, int ny, int nz, int npml, float *illumination, float *migration)
 {
     const int iz = blockIdx.x * blockDim.x + threadIdx.x;//0--nz's thread:iz
@@ -615,9 +615,9 @@ void laplace_3d_filter(int adj, int nz, int nx,int ny, float *in, float *out)
 	}
     }
 }
-/*************func**************/    
-__global__ void Poynting_Adcigs(int nnx, int nny, int nnz, int nx, int ny, int nz, int npml, int na, int da,float *adcigs,int dcdp, 
-                           float *s_P, float *s_Q, float *s_u, float *s_v, float *s_w, 
+/*************func**************/
+__global__ void Poynting_Adcigs(int nnx, int nny, int nnz, int nx, int ny, int nz, int npml, int na, int da,float *adcigs,int dcdp,
+                           float *s_P, float *s_Q, float *s_u, float *s_v, float *s_w,
                            float *g_P, float *g_Q, float *g_u, float *g_v, float *g_w)
 {
     const int iz = blockIdx.x * blockDim.x + threadIdx.x;//0--nz's thread:iz
@@ -660,7 +660,7 @@ __global__ void Poynting_Adcigs(int nnx, int nny, int nnz, int nx, int ny, int n
 
         }
 }
-/*************func**************/    
+/*************func**************/
 __global__ void adcigs_illum(int nnx, int nny, int nnz, int nx, int ny, int nz, int npml, int na, float *adcigs,int dcdp, float *illum)
 {
     const int iz = blockIdx.x * blockDim.x + threadIdx.x;//0--nz's thread:iz
@@ -675,7 +675,7 @@ __global__ void adcigs_illum(int nnx, int nny, int nnz, int nx, int ny, int nz, 
 
              if(ix<(int)(nx/dcdp)&&iz<nz)
                {
-               
+
                         id=iz+ia*nz+ix*na*nz+iy*nz*na*((int)(nx/dcdp));
                         if(illum[iz+ix*dcdp*nz+iy*dcdp*nx*nz]!=0)
                              adcigs[id] /=illum[iz+ix*dcdp*nz+iy*dcdp*nx*nz];
@@ -723,7 +723,7 @@ int main(int argc,char *argv[])
 	   char FN8[250]={"waxian_illumination.dat"};
 	   char FN9[250]={"waxian_adcigs.dat"};
 
-/********aaa************/  
+/********aaa************/
 	 FILE *fpsnap, *fpshot, *fpmig,*fpmigla, *fpillum, *fpadcigs;
         fpshot=fopen(FN4,"wb");
         fpsnap=fopen(FN5,"wb");
@@ -732,33 +732,33 @@ int main(int argc,char *argv[])
         fpillum=fopen(FN8,"wb");
         fpadcigs=fopen(FN9,"wb");
 
- 
+
 /********* parameters *************/
 
-          nx=201; 
-          ny=201;              
+          nx=201;
+          ny=201;
 	   nz=201;         favg=60;     pfac=10.0;
 
- 	   dx=5.0;  
- 	   dy=5.0;   
-          dz=5.0;   
-     
-	   nt=1501;    
-          dt=0.0005;
-     
-          ns=625;          nsx=25;  
-         // fsx=nx/nsx/2;    dsx=nx/nsx;         
-         // fsy=ny/(ns/nsx)/2;    dsy=ny/(ns/nsx);
-          fsx=4;//nx/ns/2;    
-          dsx=8;//nx/ns;         
-          fsy=4;//ny/ns/2;//200;//100;//ny/ns/2;    
-          dsy=8;//ny/ns;//0;//ny/ns;
-          zs=1;    
+ 	   dx=5.0;
+ 	   dy=5.0;
+          dz=5.0;
 
-          na=65; 
+	   nt=1501;
+          dt=0.0005;
+
+          ns=625;          nsx=25;
+         // fsx=nx/nsx/2;    dsx=nx/nsx;
+         // fsy=ny/(ns/nsx)/2;    dsy=ny/(ns/nsx);
+          fsx=4;//nx/ns/2;
+          dsx=8;//nx/ns;
+          fsy=4;//ny/ns/2;//200;//100;//ny/ns/2;
+          dsy=8;//ny/ns;//0;//ny/ns;
+          zs=1;
+
+          na=65;
           da=1;
           dcdp=1;
-/*************v***************/ 
+/*************v***************/
           nnx=nx+2*npml;
           nny=ny+2*npml;
           nnz=nz+2*npml;
@@ -833,9 +833,9 @@ int main(int argc,char *argv[])
         cudaMalloc(&s_P_bndr, nt*(2*nx*ny+2*nz*ny+2*nx*nz)*sizeof(float));
         cudaMalloc(&s_Q_bndr, nt*(2*nx*ny+2*nz*ny+2*nx*nz)*sizeof(float));
 
-        cudaMalloc(&migration, nz*nx*ny*sizeof(float)); 
-        cudaMalloc(&illumination, nz*nx*ny*sizeof(float)); 
-        cudaMalloc(&adcigs, nz*nxa*nya*na*sizeof(float)); 
+        cudaMalloc(&migration, nz*nx*ny*sizeof(float));
+        cudaMalloc(&illumination, nz*nx*ny*sizeof(float));
+        cudaMalloc(&adcigs, nz*nxa*nya*na*sizeof(float));
 
         cudaMalloc(&shot_Dev, nx*ny*nt*sizeof(float));
 /******************************/
@@ -846,18 +846,18 @@ int main(int argc,char *argv[])
         initial_coffe<<<(nny+511)/512, 512>>>(dt,ny,coffy1,coffy2,acoffy1,acoffy2,npml);
         initial_coffe<<<(nnz+511)/512, 512>>>(dt,nz,coffz1,coffz2,acoffz1,acoffz2,npml);
 
-        cudaMemset(migration, 0, nz*nx*ny*sizeof(float)); 
-        cudaMemset(illumination, 0, nz*nx*ny*sizeof(float)); 
-        cudaMemset(adcigs, 0, nz*na*nxa*nya*sizeof(float)); 
+        cudaMemset(migration, 0, nz*nx*ny*sizeof(float));
+        cudaMemset(illumination, 0, nz*nx*ny*sizeof(float));
+        cudaMemset(adcigs, 0, nz*na*nxa*nya*sizeof(float));
 
         printf("--------------------------------------------------------\n");
-        printf("---   \n");   
-        start = clock();                                  
+        printf("---   \n");
+        start = clock();
 /**********IS Loop start*******/
-   for(is=0;is<ns;is++)	
-    {     
+   for(is=0;is<ns;is++)
+    {
        //  printf("---   IS=%3d  \n",is);
-     is_t0 = clock(); 
+     is_t0 = clock();
 
      cudaMemset(s_u0, 0, nnz*nnx*nny*sizeof(float));     cudaMemset(s_u1, 0, nnz*nnx*nny*sizeof(float));
      cudaMemset(s_v0, 0, nnz*nnx*nny*sizeof(float));     cudaMemset(s_v1, 0, nnz*nnx*nny*sizeof(float));
@@ -891,16 +891,16 @@ int main(int argc,char *argv[])
      cudaMemset(shot_Dev, 0, nt*nx*ny*sizeof(float));
 
      for(it=0,t=dt;it<nt;it++,t+=dt)
-     { 
+     {
       if(it%100==0)printf("---   IS===%d   it===%d\n",is,it);
         add_source<<<1,1>>>(pfac,fsx,fsy,zs,nx,ny,nz,nnx,nny,nnz,dt,t,favg,wtype,npml,is,dsx,dsy,s_P,s_Q,nsx);
         update_vel<<<dimg,dimb>>>(nx,ny,nz,nnx,nny,nnz,npml,dt,dx,dy,dz,
                                  s_u0,s_v0,s_w0,s_u1,s_v1,s_w1,s_P,s_Q,coffx1,coffx2,coffy1,coffy2,coffz1,coffz2);
         update_stress<<<dimg,dimb>>>(nx,ny,nz,nnx,nny,nnz,dt,dx,dy,dz,s_u1,s_v1,s_w1,s_P,s_Q,vp,npml,
                                      s_px1,s_px0,s_py1,s_py0,s_pz1,s_pz0,s_qx1,s_qx0,s_qy1,s_qy0,s_qz1,s_qz0,
-                                     acoffx1,acoffx2,acoffy1,acoffy2,acoffz1,acoffz2,deta,epsilu, 
+                                     acoffx1,acoffx2,acoffy1,acoffy2,acoffz1,acoffz2,deta,epsilu,
                                      fsx, dsx, fsy, dsy,zs, is, nsx, true);
-        s_u0=s_u1; s_v0=s_v1; s_w0=s_w1; s_px0=s_px1; s_py0=s_py1; s_pz0=s_pz1; s_qx0=s_qx1; s_qy0=s_qy1; s_qz0=s_qz1; 
+        s_u0=s_u1; s_v0=s_v1; s_w0=s_w1; s_px0=s_px1; s_py0=s_py1; s_pz0=s_pz1; s_qx0=s_qx1; s_qy0=s_qy1; s_qz0=s_qz1;
 
         wavefield_bndr<<<(2*nx*ny+2*nz*ny+2*nx*nz+511)/512, 512>>>(nnx,nny,nnz,nx,ny,nz,npml,it,nt,s_P,s_Q,s_P_bndr,s_Q_bndr,true);
         shot_record<<<(nx*ny+511)/512, 512>>>(nnx,nny, nnz, nx, ny, nz, npml, it, nt, s_P, s_Q, shot_Dev, true);
@@ -917,24 +917,24 @@ int main(int argc,char *argv[])
      }//it loop end
 
       mute_directwave<<<Xdimg,dimb>>>(nx,ny,nt,dt,favg,dx,dy,dz,fsx,fsy,dsx,dsy,zs,is,vp,epsilu,shot_Dev,70,nsx);
-      
-   //   if(is==0){   
+
+   //   if(is==0){
           cudaMemcpy(shot_Hos, shot_Dev, nt*nx*ny*sizeof(float), cudaMemcpyDeviceToHost);
          // fseek(fpshot,is*nt*nx*ny*sizeof(float),0);
           fwrite(shot_Hos,sizeof(float),nt*nx*ny,fpshot);
     //   }
 
     for(it=nt-1;it>=0;it--)
-     { 
+     {
       if(it%100==0)printf("---   IS===%d   it===%d\n",is,it);
         wavefield_bndr<<<(2*nx*ny+2*nz*ny+2*nx*nz+511)/512, 512>>>(nnx,nny,nnz,nx,ny,nz,npml,it,nt,s_P,s_Q,s_P_bndr,s_Q_bndr,false);
         update_vel<<<dimg,dimb>>>(nx,ny,nz,nnx,nny,nnz,npml,dt,dx,dy,dz,
                                  s_u0,s_v0,s_w0,s_u1,s_v1,s_w1,s_P,s_Q,coffx1,coffx2,coffy1,coffy2,coffz1,coffz2);
         update_stress<<<dimg,dimb>>>(nx,ny,nz,nnx,nny,nnz,dt,dx,dy,dz,s_u1,s_v1,s_w1,s_P,s_Q,vp,npml,
                                      s_px1,s_px0,s_py1,s_py0,s_pz1,s_pz0,s_qx1,s_qx0,s_qy1,s_qy0,s_qz1,s_qz0,
-                                     acoffx1,acoffx2,acoffy1,acoffy2,acoffz1,acoffz2,deta,epsilu, 
+                                     acoffx1,acoffx2,acoffy1,acoffy2,acoffz1,acoffz2,deta,epsilu,
                                      fsx, dsx, fsy, dsy,zs, is, nsx, true);
-        s_u0=s_u1; s_v0=s_v1; s_w0=s_w1; s_px0=s_px1; s_py0=s_py1; s_pz0=s_pz1; s_qx0=s_qx1; s_qy0=s_qy1; s_qz0=s_qz1; 
+        s_u0=s_u1; s_v0=s_v1; s_w0=s_w1; s_px0=s_px1; s_py0=s_py1; s_pz0=s_pz1; s_qx0=s_qx1; s_qy0=s_qy1; s_qz0=s_qz1;
 
       /*     if((is==0)&&(it!=0&&it%100==0))
             {
@@ -949,9 +949,9 @@ int main(int argc,char *argv[])
                                  g_u0,g_v0,g_w0,g_u1,g_v1,g_w1,g_P,g_Q,coffx1,coffx2,coffy1,coffy2,coffz1,coffz2);
         update_stress<<<dimg,dimb>>>(nx,ny,nz,nnx,nny,nnz,dt,dx,dy,dz,g_u1,g_v1,g_w1,g_P,g_Q,vp,npml,
                                      g_px1,g_px0,g_py1,g_py0,g_pz1,g_pz0,g_qx1,g_qx0,g_qy1,g_qy0,g_qz1,g_qz0,
-                                     acoffx1,acoffx2,acoffy1,acoffy2,acoffz1,acoffz2,deta,epsilu, 
+                                     acoffx1,acoffx2,acoffy1,acoffy2,acoffz1,acoffz2,deta,epsilu,
                                      fsx, dsx, fsy, dsy,zs, is, nsx, true);
-        g_u0=g_u1; g_v0=g_v1; g_w0=g_w1; g_px0=g_px1; g_py0=g_py1; g_pz0=g_pz1; g_qx0=g_qx1; g_qy0=g_qy1; g_qz0=g_qz1; 
+        g_u0=g_u1; g_v0=g_v1; g_w0=g_w1; g_px0=g_px1; g_py0=g_py1; g_pz0=g_pz1; g_qx0=g_qx1; g_qy0=g_qy1; g_qz0=g_qz1;
 
     /*       if((is==0)&&(it!=0&&it%100==0))
             {
@@ -967,7 +967,7 @@ int main(int argc,char *argv[])
                                                 s_P,s_Q,s_u0,s_v0,s_w0,g_P,g_Q,g_u0,g_v0,g_w0);
 
      }//it loop end
-    is_t1 = clock(); 
+    is_t1 = clock();
     printf("IS=%3d: %f (min)\n", is, ((float)(is_t1-is_t0))/60.0/CLOCKS_PER_SEC);
     }//is loop end
 
@@ -987,16 +987,16 @@ int main(int argc,char *argv[])
 
 
     end = clock();
-/*********IS Loop end*********/ 		     
-   printf("---   The forward is over    \n"); 
-   printf("---   Complete!!!!!!!!! \n");  
+/*********IS Loop end*********/
+   printf("---   The forward is over    \n");
+   printf("---   Complete!!!!!!!!! \n");
    printf("total %d shots: %f (min)\n", ns, ((float)(end-start))/60.0/CLOCKS_PER_SEC);
 
 
 
-/***********close************/ 
+/***********close************/
           fclose(fpsnap);   fclose(fpshot);   fclose(fpmig);fclose(fpmigla); fclose(fpillum); fclose(fpadcigs);
-/***********free*************/ 
+/***********free*************/
        cudaFree(coffx1);       cudaFree(coffx2);
        cudaFree(coffz1);       cudaFree(coffz2);
        cudaFree(acoffx1);      cudaFree(acoffx2);

@@ -1,10 +1,10 @@
 //a#########################################################
-//a##         2D Elastic TTI Medium Forward   
-//a##  Ps : P0 + sv wave and get rid of sv        
-//a##       GPU(CUDA)  
+//a##         2D Elastic TTI Medium Forward
+//a##  Ps : P0 + sv wave and get rid of sv
+//a##       GPU(CUDA)
 //a##  miss Geo, now i'm in OS Cestc.
 //a##
-//a##                                  code by Rong Tao 
+//a##                                  code by Rong Tao
 //a##                                   2017.4.8
 //a#########################################################
 #include <stdio.h>
@@ -23,13 +23,13 @@ __constant__ float c4[5]={0.0,0.8,-0.2,0.038095,-0.0035714};
 __constant__ float stencil[5]={-205.0/72.0,8.0/5.0,-1.0/5.0,8.0/315.0,-1.0/560.0};
 
 //a################################################################################
-void check_gpu_error (const char *msg) 
+void check_gpu_error (const char *msg)
 /*< check GPU errors >*/
 {
     cudaError_t err = cudaGetLastError ();
-    if (cudaSuccess != err) { 
-	printf("Cuda error: %s: %s\n", msg, cudaGetErrorString (err)); 
-	exit(0);   
+    if (cudaSuccess != err) {
+	printf("Cuda error: %s: %s\n", msg, cudaGetErrorString (err));
+	exit(0);
     }
 }
 //a################################################################################
@@ -38,8 +38,8 @@ __global__ void add_source(float pfac,float xsn,float zsn,int nx,int nz,int nnx,
 /*< generate ricker wavelet with time deley >*/
 {
        int ixs,izs;
-       float x_,x2_,tdelay,ts,source=0.0,fs; 
-  
+       float x_,x2_,tdelay,ts,source=0.0,fs;
+
        tdelay=1.0/favg;
        ts=t-tdelay;
        fs=xsn+(is-1)*ds;
@@ -58,7 +58,7 @@ __global__ void add_source(float pfac,float xsn,float zsn,int nx,int nz,int nnx,
         }
 
        if(t<=2*tdelay)
-       {         
+       {
 	     ixs = (int)(fs+0.5)+npd-1;
             izs = (int)(zsn+0.5)+npd-1;
             P[ixs*nnz+izs]+=pfac*source;
@@ -96,7 +96,7 @@ __global__ void VTI_FD(int nx,int nz,int nnx,int nnz,float dt,float dx,float dz,
                                dd = 0.0;
                            }else{
                                ee = 0.5*(1-cos(pi*((sqrtf(rx*rx+rz*rz)-r)*4.0/(R*3.0-1))))*epsilon[id];
-                               dd = 0.5*(1-cos(pi*((sqrtf(rx*rx+rz*rz)-r)*4.0/(R*3.0-1))))*delta[id]; 
+                               dd = 0.5*(1-cos(pi*((sqrtf(rx*rx+rz*rz)-r)*4.0/(R*3.0-1))))*delta[id];
                               }
                        }else{
                           ee=epsilon[id];
@@ -127,7 +127,7 @@ __global__ void VTI_FD(int nx,int nz,int nnx,int nnz,float dt,float dx,float dz,
                        }
 /************************ Pxz Qxz ********************************/
                       Pxz=0.0;
-                      Qxz=0.0; 
+                      Qxz=0.0;
 	             for(imz=0;imz<=mm;imz++)
                       {
 	                 for(imx=0;imx<=mm;imx++)
@@ -167,12 +167,12 @@ __global__ void VTI_FD(int nx,int nz,int nnx,int nnz,float dt,float dx,float dz,
                                                      - c44*(cc*Pxx + ss*Pzz - s2*Pxz - cc*Qxx - ss*Qzz + s2*Qxz);
                    }
                  }
-}                      
+}
 /*************func*******************/
 void pad_vv(int nx,int nz,int nnx,int nnz,int npd,float *ee)
 {
      int ix,iz,id;
- 
+
     for(id=0;id<nnx*nnz;id++)
      {
        ix=id/nnz;
@@ -200,7 +200,7 @@ void read_file(char FN1[],char FN2[],char FN3[],char FN4[],int nx,int nz,int nnx
                float *vs,int npd)
 {
 		 int i,j,id;
-		
+
 		 FILE *fp1,*fp2,*fp3,*fp4;
 		 if((fp1=fopen(FN1,"rb"))==NULL)printf("error open <%s>!\n",FN1);
 		 if((fp2=fopen(FN2,"rb"))==NULL)printf("error open <%s>!\n",FN2);
@@ -212,7 +212,7 @@ void read_file(char FN1[],char FN2[],char FN3[],char FN4[],int nx,int nz,int nnx
 			 {
                             id=i*nnz+j;
 				 fread(&vv[id],4L,1,fp1);//vv[id]=2000;
-                                                            
+
 				 fread(&epsilon[id],4L,1,fp2);//epsilon[id]=0.24;
 				 fread(&delta[id],4L,1,fp3);//delta[id]=0.1;
 				 fread(&theta[id],4L,1,fp4);theta[id]*=pi/180.0;//theta[id]=45.0;
@@ -230,15 +230,15 @@ void read_file(char FN1[],char FN2[],char FN3[],char FN4[],int nx,int nz,int nnx
 
 /*************func*******************/
 __global__ void shot_record(int nnx, int nnz, int nx, int nz, int npd, int it, int nt, float *P0, float *shot)
-{		
+{
 	 int id=threadIdx.x+blockDim.x*blockIdx.x;
 
            if(id<nx)
             {
                shot[it+nt*id]=P0[npd+nnz*(id+npd)];
-            }       
+            }
 }
-/*************func**************/    
+/*************func**************/
 __global__ void mute_directwave(int nx,int nt,float dt,float favg,
                      float dx,float dz,int fs,int ds,int zs,int is,
                      float *vp,float *epsilon,float *shot,int tt)
@@ -263,8 +263,8 @@ __global__ void mute_directwave(int nx,int nt,float dt,float favg,
               shot[id]=0.0;
    }
 }
-/************************************func***************************************/      
-__global__ void absorb_bndr(float *P0,float *P1,float *Q0,float *Q1,int nx,int nz,int nnz,int npd,float qp) 
+/************************************func***************************************/
+__global__ void absorb_bndr(float *P0,float *P1,float *Q0,float *Q1,int nx,int nz,int nnz,int npd,float qp)
 {
     int id=threadIdx.x+blockDim.x*blockIdx.x;
     int ix,iz;
@@ -296,7 +296,7 @@ __global__ void absorb_bndr(float *P0,float *P1,float *Q0,float *Q1,int nx,int n
                Q1[id]*=( qp*pow((iz-npd-nz)/(1.0*npd),2) + 1 );
          }
     }
-}   
+}
 //a########################################################################
 int main(int argc,char *argv[])
 {
@@ -318,28 +318,28 @@ int main(int argc,char *argv[])
           char FN4[250]={"thrust_theta_711_300.dat"};
 	        char FN5[250]={"thrust_shot_stable.dat"};
 	        char FN6[250]={"thrust_snap_stable.dat"};
-/********aaa************/  
+/********aaa************/
 	 FILE *fpsnap, *fpshot;
         fpshot=fopen(FN5,"wb");
         fpsnap=fopen(FN6,"wb");
 
- 
+
 /********* parameters *************/
 
-    nx=711;              
+    nx=711;
     nz=300;         favg=40;     pfac=1000.0;
 
-    dx=5.0;   
-    dz=5.0;   
-     
-    nt=3501;    
+    dx=5.0;
+    dz=5.0;
+
+    nt=3501;
     dt=0.0005;
-     
-    ns=350;       
-    fs=nx/ns/2;      
+
+    ns=350;
+    fs=nx/ns/2;
     ds=nx/ns;
-    zs=0;     
-/*************v***************/ 
+    zs=0;
+/*************v***************/
           nnx=nx+2*npd;
           nnz=nz+2*npd;
 /************a*************/
@@ -356,8 +356,8 @@ int main(int argc,char *argv[])
         pad_vv(nx,nz,nnx,nnz,npd,e);
         pad_vv(nx,nz,nnx,nnz,npd,d);
         pad_vv(nx,nz,nnx,nnz,npd,v);
-        pad_vv(nx,nz,nnx,nnz,npd,th); 
-        pad_vv(nx,nz,nnx,nnz,npd,s); 
+        pad_vv(nx,nz,nnx,nnz,npd,th);
+        pad_vv(nx,nz,nnx,nnz,npd,s);
 
         cudaSetDevice(0);// initialize device, default device=0;
 	 check_gpu_error("Failed to initialize device!");
@@ -382,11 +382,11 @@ int main(int argc,char *argv[])
 /******************************/
 	 check_gpu_error("Failed to allocate memory for variables!");
         printf("--------------------------------------------------------\n");
-        printf("---   \n");   
-        start = clock();                                  
+        printf("---   \n");
+        start = clock();
 /**********IS Loop start*******/
-   for(is=1;is<=ns;is++)	
-    {     
+   for(is=1;is<=ns;is++)
+    {
          printf("---   IS=%3d  \n",is);
 
      cudaMemset(P0, 0, nnz*nnx*sizeof(float));      cudaMemset(Q0, 0, nnz*nnx*sizeof(float));
@@ -395,7 +395,7 @@ int main(int argc,char *argv[])
      cudaMemset(shot_Dev, 0, nt*nx*sizeof(float));
 
      for(it=0,t=dt;it<nt;it++,t+=dt)
-     { 
+     {
       //if(it%100==0&&is==1)printf("---   is===%d   it===%d\n",is,it);
 
 	 add_source<<<1,1>>>(pfac,fs,zs,nx,nz,nnx,nnz,dt,t,favg,wtype,npd,is,ds,P0,Q0);
@@ -419,16 +419,16 @@ int main(int argc,char *argv[])
 
     }//is loop end
     end = clock();
-/*********IS Loop end*********/ 		     
-   printf("---   The forward is over    \n"); 
-   printf("---   Complete!!!!!!!!! \n");  
+/*********IS Loop end*********/
+   printf("---   The forward is over    \n");
+   printf("---   Complete!!!!!!!!! \n");
    printf("total %d shots: %f (s)\n", ns, ((float)(end-start))/CLOCKS_PER_SEC);
 
 
 
-/***********close************/ 
+/***********close************/
           fclose(fpsnap);   fclose(fpshot);
-/***********free*************/ 
+/***********free*************/
 
        cudaFree(P0);            cudaFree(Q0);
        cudaFree(P1);            cudaFree(Q1);
